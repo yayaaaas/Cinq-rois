@@ -1,6 +1,5 @@
-let peer = null;
-let conn = null;
-let estHote = false;
+var peer = null;
+var conn = null;
 
 // 1. L'hôte crée la partie
 function creerPartie() {
@@ -11,7 +10,7 @@ function creerPartie() {
         document.getElementById('my-id-display').innerHTML = `Partie créée ! Code : <b>${id}</b>`;
         document.getElementById('status-message').innerText = "En attente du Joueur 2...";
         estHote = true;
-        monTour = true; // L'hôte commence toujours
+        monTour = true;
     });
 
     peer.on('connection', (connection) => {
@@ -34,23 +33,26 @@ function rejoindrePartie() {
         conn = peer.connect(codeEntre);
         initialiserConnexion();
         estHote = false;
-        monTour = false; // Le joueur 2 attend
+        monTour = false;
     });
 }
 
 function initialiserConnexion() {
     conn.on('open', () => {
-        console.log("Connexion établie !");
-        document.getElementById('status-message').innerText = "Connecté ! Préparation de la partie...";
+        document.getElementById('status-message').innerText = "Connecté ! Synchronisation...";
 
-        // Si on est le Joueur 2, on dit à l'hôte : "Je suis prêt, envoie les cartes !"
+        // Le joueur 2 confirme qu'il est prêt à recevoir les cartes
         if (!estHote) {
-            envoyerActionReseau('JOUEUR_PRET', {});
+            setTimeout(() => {
+                envoyerActionReseau('JOUEUR_PRET', {});
+            }, 500);
         }
     });
 
     conn.on('data', (data) => {
-        recevoirActionReseau(data);
+        if (typeof recevoirActionReseau === 'function') {
+            recevoirActionReseau(data);
+        }
     });
 
     conn.on('close', () => {
