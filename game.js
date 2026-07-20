@@ -166,40 +166,57 @@ function actionTrierMain() {
     afficherMain();
 }
 
-// Fonction qui vérifie si un groupe de cartes forme une Famille valide
+// Détermine si une carte agit comme un Joker (soit un Joker, soit l'Atout de la manche)
+function estUnJokerOuAtout(carte) {
+    if (carte.type === 'joker') return true;
+    
+    // L'Atout correspond au numéro de la manche + 2 (Ex: Manche 1 = 3 cartes -> Atout = 3)
+    let valeurAtout = mancheActuelle + 2;
+    let valeurAtoutTexte = valeurAtout.toString();
+    
+    if (valeurAtout === 11) valeurAtoutTexte = 'V';
+    if (valeurAtout === 12) valeurAtoutTexte = 'D';
+    if (valeurAtout === 13) valeurAtoutTexte = 'R';
+
+    return carte.valeur === valeurAtoutTexte;
+}
+
+// Vérifier si un groupe forme une Famille (en comptant les Atouts comme Jokers)
 function estUneFamille(groupe) {
     if (groupe.length < 3) return false;
     
-    // On ignore les jokers pour trouver la valeur de référence
-    let cartesNormales = groupe.filter(c => c.type !== 'joker');
-    if (cartesNormales.length === 0) return true; // Que des jokers = valide
+    // On filtre toutes les cartes qui NE SONT PAS des Jokers ou des Atouts
+    let cartesNormales = groupe.filter(c => !estUnJokerOuAtout(c));
+    if (cartesNormales.length === 0) return true; // Que des Jokers/Atouts = valide !
 
     let valeurRef = cartesNormales[0].valeur;
-    // Toutes les cartes non-jokers doivent avoir la même valeur
+    // Toutes les cartes normales doivent avoir la même valeur
     return cartesNormales.every(c => c.valeur === valeurRef);
 }
 
-// Fonction qui vérifie si un groupe de cartes forme une Suite valide
+// Vérifier si un groupe forme une Suite (en comptant les Atouts comme Jokers)
 function estUneSuite(groupe) {
     if (groupe.length < 3) return false;
     
-    let cartesNormales = groupe.filter(c => c.type !== 'joker');
-    if (cartesNormales.length === 0) return true; // Que des jokers
+    // On filtre pour ne garder que les cartes "normales"
+    let cartesNormales = groupe.filter(c => !estUnJokerOuAtout(c));
+    if (cartesNormales.length === 0) return true; // Que des Jokers/Atouts = valide !
 
-    // Vérifier qu'elles ont toutes la même couleur
+    // Vérifier la même couleur pour toutes les cartes normales
     let couleurRef = cartesNormales[0].couleur;
     if (!cartesNormales.every(c => c.couleur === couleurRef)) return false;
 
     // Convertir en valeurs numériques et trier
     let valeurs = cartesNormales.map(c => obtenirValeurNumerique(c.valeur)).sort((a, b) => a - b);
     
-    // Vérifier les écarts en tenant compte des jokers disponibles
-    let nbJokers = groupe.length - cartesNormales.length;
+    // Nombre de Jokers/Atouts disponibles pour combler les trous
+    let nbJokersDispo = groupe.length - cartesNormales.length;
+    
     for (let i = 0; i < valeurs.length - 1; i++) {
         let ecart = valeurs[i+1] - valeurs[i] - 1;
-        if (ecart < 0) return false; // Doublon (ex: deux 5 de la même couleur)
-        nbJokers -= ecart;
-        if (nbJokers < 0) return false; // Pas assez de jokers pour combler le trou
+        if (ecart < 0) return false; // Doublons interdits dans une suite (ex: deux 5 de même couleur)
+        nbJokersDispo -= ecart;
+        if (nbJokersDispo < 0) return false; // Pas assez de Jokers/Atouts
     }
     return true;
 }
