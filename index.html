@@ -16,6 +16,13 @@
             <div id="discard-pile" class="card-slot" onclick="actionPiocherDefausse()">Défausse vide</div>
         </div>
 
+        <div id="tableau-pose">
+            <h2>Vos Combinaisons (à poser)</h2>
+            <div id="zones-combinaisons"></div>
+            <button id="btn-creer-groupe" onclick="creerNouveauGroupe()">+ Créer un groupe de cartes</button>
+            <button id="btn-valider-pose" onclick="validerEtPoserMain()">Poser toute ma main !</button>
+        </div>
+
         <h2>Votre Main</h2>
         <div id="player-hand"></div>
         <button id="btn-trier" onclick="actionTrierMain()">Trier ma main</button>
