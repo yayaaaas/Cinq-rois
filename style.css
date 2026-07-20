@@ -54,3 +54,17 @@ S
 .pique { color: #2c3e50; }
 .etoile { color: #9b59b6; }
 .joker { color: #f1c40f; background-color: #f39c12; color: white; }
+
+#btn-trier {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 15px;
+}
+#btn-trier:hover {
+    background-color: #2980b9;
+}
