@@ -90,6 +90,26 @@ function actionPiocher() {
     }
 }
 
+// ACTION : Piocher dans la défausse
+function actionPiocherDefausse() {
+    if (aPioche) {
+        alert("Vous avez déjà pioché ! Défaussez une carte pour finir votre tour.");
+        return;
+    }
+    if (defausse.length === 0) {
+        alert("La défausse est vide, vous devez piocher dans le paquet !");
+        return;
+    }
+    
+    // On récupère la carte visible de la défausse
+    let cartePrelee = defausse.pop();
+    maMain.push(cartePrelee);
+    aPioche = true; // On valide l'action de pioche
+    
+    afficherMain();
+    afficherDefausse();
+}
+
 // ACTION : Défausser une carte
 function actionDefausser(indexCarte) {
     if (!aPioche) {
