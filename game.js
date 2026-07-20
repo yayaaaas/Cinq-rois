@@ -320,3 +320,36 @@ function validerEtPoserMain() {
     alert("Félicitations ! Vous avez posé toute votre main ! Les autres joueurs ont un dernier tour.");
     // Ici, nous déclencherons le dernier tour pour le réseau
 }
+
+// Nouvelle fonction dédiée pour défausser via le bouton
+function actionDefausserBouton() {
+    if (!aPioche) {
+        alert("Vous devez d'abord piocher une carte !"); // [cite: 22, 23]
+        return;
+    }
+
+    if (cartesSelectionnees.length === 0) {
+        alert("Cliquez sur la carte de votre main que vous souhaitez défausser.");
+        return;
+    }
+
+    if (cartesSelectionnees.length > 1) {
+        alert("Vous ne pouvez défausser qu'une seule carte à la fois !"); // 
+        return;
+    }
+
+    // Récupérer l'index de la carte choisie
+    let indexCarte = cartesSelectionnees[0];
+
+    // Retirer la carte de la main et l'ajouter à la défausse
+    let carteDefaussee = maMain.splice(indexCarte, 1)[0]; // 
+    defausse.push(carteDefaussee); // 
+
+    // Réinitialiser les états
+    cartesSelectionnees = [];
+    aPioche = false; // Fin du tour ! 
+
+    // Mettre à jour l'affichage
+    afficherMain();
+    afficherDefausse();
+}
