@@ -109,3 +109,32 @@ S
 #btn-defausser:hover {
     background-color: #c0392b;
 }
+
+#connection-panel {
+    background-color: #34495e;
+    padding: 15px;
+    border-radius: 8px;
+    max-width: 400px;
+    margin: 10px auto;
+    border: 1px solid #7f8c8d;
+}
+
+#connection-panel input {
+    padding: 8px;
+    border-radius: 4px;
+    border: none;
+    margin-right: 5px;
+}
+
+#connection-panel button {
+    padding: 8px 15px;
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#connection-panel button:hover {
+    background-color: #27ae60;
+}
