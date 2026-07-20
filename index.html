@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinq Rois - Multijoueur</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+    <h1>Jeu du Cinq Rois</h1>
+    
+    <div id="game-zone">
+        <div id="table">
+            <div id="deck-pile" class="card-slot">Pioche</div>
+            <div id="discard-pile" class="card-slot">Défausse</div>
+        </div>
+
+        <h2>Votre Main</h2>
+        <div id="player-hand"></div>
+    </div>
+
+    <script src="game.js"></script>
+    <script src="network.js"></script>
+</body>
+</html>
