@@ -50,26 +50,32 @@ function afficherDefausse() {
 function afficherMain() {
     const handDiv = document.getElementById('player-hand');
     handDiv.innerHTML = ''; 
-    
-    // On ajoute un index pour savoir sur quelle carte on clique
+
     maMain.forEach((carte, index) => {
         const cardDiv = document.createElement('div');
         cardDiv.classList.add('card', carte.couleur);
-        
-        // Si la carte est un Atout ou Joker, on lui ajoute une distinction
-        let estAtout = estUnJokerOuAtout(carte);
-        if (estAtout) {
-            cardDiv.style.border = "2px solid #f1c40f"; // Bordure dorée
+
+        // 1. On vérifie si la carte est un Joker ou un Atout
+        let estAtoutOuJoker = estUnJokerOuAtout(carte);
+
+        // 2. Si c'est un Atout/Joker, on lui met une bordure dorée bien visible
+        if (estAtoutOuJoker) {
+            cardDiv.style.border = "3px solid #f1c40f";
+            cardDiv.style.boxShadow = "0 0 10px #f1c40f";
         }
 
+        // 3. Style pour la carte sélectionnée (cliquée)
         if (cartesSelectionnees.includes(index)) {
             cardDiv.classList.add('carte-selectionnee');
         }
 
         cardDiv.onclick = () => verifierClicCarte(index);
-        
+
+        // 4. On ajoute le petit badge "ATOUT" sur la carte si c'est un 3 (ou le joker de la manche)
+        let texteAtout = estAtoutOuJoker ? '⭐' : '';
+
         cardDiv.innerHTML = `
-            <div>${carte.valeur} ${estAtout ? '⭐' : ''}</div>
+            <div>${carte.valeur} ${texteAtout}</div>
             <div style="font-size: 24px;">${obtenirSymbole(carte.couleur)}</div>
             <div style="text-align: right;">${carte.valeur}</div>
         `;
