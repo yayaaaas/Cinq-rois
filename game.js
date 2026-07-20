@@ -215,3 +215,108 @@ function testerCombinaison(indicesSélectionnes) {
         alert("Combinaison invalide.");
     }
 }
+
+let cartesSelectionnees = []; // Indices des cartes cliquées pour créer une combinaison
+let groupesAposer = []; // Tableau contenant les groupes de cartes préparés (ex: [ [c1,c2,c3], [c4,c5,c6] ])
+
+// 1. Modifier l'affichage des cartes pour gérer le clic de sélection
+function afficherMain() {
+    const handDiv = document.getElementById('player-hand');
+    handDiv.innerHTML = ''; 
+    
+    maMain.forEach((carte, index) => {
+        const cardDiv = document.createElement('div');
+        cardDiv.classList.add('card', carte.couleur);
+        
+        // Si la carte est actuellement sélectionnée, on lui ajoute la classe
+        if (cartesSelectionnees.includes(index)) {
+            cardDiv.classList.add('carte-selectionnee');
+        }
+
+        // Clic sur une carte : si on a pioché, le clic bascule entre sélectionner ou défausser
+        cardDiv.onclick = () => verifierClicCarte(index);
+        
+        cardDiv.innerHTML = `
+            <div>${carte.valeur}</div>
+            <div style="font-size: 24px;">${obtenirSymbole(carte.couleur)}</div>
+            <div style="text-align: right;">${carte.valeur}</div>
+        `;
+        handDiv.appendChild(cardDiv);
+    });
+}
+
+function verifierClicCarte(index) {
+    // Si la carte est déjà sélectionnée pour poser, on la retire de la sélection
+    if (cartesSelectionnees.includes(index)) {
+        cartesSelectionnees = cartesSelectionnees.filter(i => i !== index);
+    } else {
+        // Sinon, on l'ajoute à la sélection temporaire
+        cartesSelectionnees.push(index);
+    }
+    afficherMain();
+}
+
+// 2. Créer un groupe à partir des cartes sélectionnées
+function creerNouveauGroupe() {
+    if (cartesSelectionnees.length < 3) {
+        alert("Une combinaison doit contenir au moins 3 cartes !");
+        return;
+    }
+
+    // Récupérer les cartes sélectionnées
+    let nouveauGroupe = cartesSelectionnees.map(i => maMain[i]);
+    
+    // Vérifier si ce groupe forme une suite ou une famille valide
+    if (estUneFamille(nouveauGroupe) || estUneSuite(nouveauGroupe)) {
+        groupesAposer.push(nouveauGroupe);
+        
+        // Retirer ces cartes de la main principale
+        maMain = maMain.filter((_, idx) => !cartesSelectionnees.includes(idx));
+        cartesSelectionnees = []; // Réinitialiser la sélection
+        
+        afficherMain();
+        afficherGroupesAPoser();
+    } else {
+        alert("Ce groupe n'est ni une Suite valide, ni une Famille valide !");
+    }
+}
+
+// 3. Afficher les groupes validés en attente de pose définitive
+function afficherGroupesAPoser() {
+    const container = document.getElementById('zones-combinaisons');
+    container.innerHTML = '';
+
+    groupesAposer.forEach((groupe, idxGroupe) => {
+        const divGroupe = document.createElement('div');
+        divGroupe.className = 'groupe-cartes';
+        
+        groupe.forEach(carte => {
+            const cardDiv = document.createElement('div');
+            cardDiv.classList.add('card', carte.couleur);
+            cardDiv.innerHTML = `
+                <div>${carte.valeur}</div>
+                <div style="font-size: 20px;">${obtenirSymbole(carte.couleur)}</div>
+            `;
+            divGroupe.appendChild(cardDiv);
+        });
+
+        container.appendChild(divGroupe);
+    });
+}
+
+// 4. Valider l'abattage complet de la main
+function validerEtPoserMain() {
+    // Selon la règle : Il faut poser la TOTALITÉ de sa main 
+    if (maMain.length > 0) {
+        alert(`Il vous reste ${maMain.length} carte(s) en main. Vous devez utiliser toutes vos cartes dans des combinaisons pour pouvoir poser !`);
+        return;
+    }
+
+    if (groupesAposer.length === 0) {
+        alert("Vous n'avez préparé aucune combinaison.");
+        return;
+    }
+
+    alert("Félicitations ! Vous avez posé toute votre main ! Les autres joueurs ont un dernier tour.");
+    // Ici, nous déclencherons le dernier tour pour le réseau
+}
