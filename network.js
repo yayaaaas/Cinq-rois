@@ -17,10 +17,6 @@ function creerPartie() {
     peer.on('connection', (connection) => {
         conn = connection;
         initialiserConnexion();
-        document.getElementById('status-message').innerText = "Joueur 2 connecté ! C'est votre tour de jouer.";
-        
-        // L'hôte distribue les cartes
-        initialiserPartieReseau();
     });
 }
 
@@ -38,13 +34,19 @@ function rejoindrePartie() {
         conn = peer.connect(codeEntre);
         initialiserConnexion();
         estHote = false;
-        monTour = false; // Le joueur 2 attend son tour
+        monTour = false; // Le joueur 2 attend
     });
 }
 
 function initialiserConnexion() {
     conn.on('open', () => {
-        document.getElementById('status-message').innerText = monTour ? "C'est votre tour !" : "Au tour de votre adversaire...";
+        console.log("Connexion établie !");
+        document.getElementById('status-message').innerText = "Connecté ! Préparation de la partie...";
+
+        // Si on est le Joueur 2, on dit à l'hôte : "Je suis prêt, envoie les cartes !"
+        if (!estHote) {
+            envoyerActionReseau('JOUEUR_PRET', {});
+        }
     });
 
     conn.on('data', (data) => {
