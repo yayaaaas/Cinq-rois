@@ -8,6 +8,21 @@
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
+
+    <div id="connection-panel">
+        <h2>Multijoueur</h2>
+        <div id="host-zone">
+            <button id="btn-create" onclick="creerPartie()">Créer une partie</button>
+            <p id="my-id-display"></p>
+        </div>
+        <hr>
+        <div id="join-zone">
+            <input type="text" id="join-id-input" placeholder="Entrez le code de la partie">
+            <button id="btn-join" onclick="rejoindrePartie()">Rejoindre</button>
+        </div>
+        <p id="status-message">Statut : Non connecté</p>
+    </div>
+
     <h1>Jeu du Cinq Rois</h1>
     
     <div id="game-zone">
