@@ -1,25 +1,20 @@
-// Configuration du jeu
 const COULEURS = ['coeur', 'carreau', 'trefle', 'pique', 'etoile'];
-const VALEURS = ['3', '4', '5', '6', '7', '8', '9', '10', 'V', 'D', 'R']; // V=Valet, D=Dame, R=Roi
+const VALEURS = ['3', '4', '5', '6', '7', '8', '9', '10', 'V', 'D', 'R'];
 
 let pioche = [];
 let defausse = [];
 let maMain = [];
-let mancheActuelle = 1; // Manche 1 = 3 cartes
+let mancheActuelle = 1; 
+let aPioche = false; // Sécurité : force le joueur à piocher AVANT de défausser
 
-// 1. Générer le paquet complet (2 sets de 58 cartes = 116 cartes)
 function genererDeck() {
     let deck = [];
-    
-    // On fait deux boucles pour les 2 sets identiques
     for (let set = 0; set < 2; set++) {
-        // Ajout des cartes normales
         COULEURS.forEach(couleur => {
             VALEURS.forEach(valeur => {
                 deck.push({ valeur: valeur, couleur: couleur, type: 'normale' });
             });
         });
-        // Ajout des 3 Jokers par set (6 au total)
         for (let j = 0; j < 3; j++) {
             deck.push({ valeur: 'Joker', couleur: 'joker', type: 'joker' });
         }
@@ -27,7 +22,6 @@ function genererDeck() {
     return deck;
 }
 
-// 2. Mélanger le paquet (Fisher-Yates)
 function melanger(deck) {
     for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -36,14 +30,33 @@ function melanger(deck) {
     return deck;
 }
 
-// 3. Afficher la main dans le HTML
+// Nouvelle fonction : Met à jour la pile de défausse visuellement
+function afficherDefausse() {
+    const discardSlot = document.getElementById('discard-pile');
+    if (defausse.length > 0) {
+        const derniereCarte = defausse[defausse.length - 1];
+        discardSlot.className = `card-slot card ${derniereCarte.couleur}`;
+        discardSlot.innerHTML = `
+            <div>${derniereCarte.valeur}</div>
+            <div style="font-size: 24px;">${obtenirSymbole(derniereCarte.couleur)}</div>
+            <div style="text-align: right;">${derniereCarte.valeur}</div>
+        `;
+    } else {
+        discardSlot.className = 'card-slot';
+        discardSlot.innerHTML = 'Défausse vide';
+    }
+}
+
 function afficherMain() {
     const handDiv = document.getElementById('player-hand');
-    handDiv.innerHTML = ''; // On vide l'affichage précédent
+    handDiv.innerHTML = ''; 
     
-    maMain.forEach(carte => {
+    // On ajoute un index pour savoir sur quelle carte on clique
+    maMain.forEach((carte, index) => {
         const cardDiv = document.createElement('div');
-        cardDiv.classList.add('card', carte.colour || carte.couleur);
+        cardDiv.classList.add('card', carte.couleur);
+        // Au clic, on tente de défausser cette carte
+        cardDiv.setAttribute('onclick', `actionDefausser(${index})`);
         
         cardDiv.innerHTML = `
             <div>${carte.valeur}</div>
@@ -60,22 +73,51 @@ function obtenirSymbole(couleur) {
     if (couleur === 'trefle') return '♣';
     if (couleur === 'pique') return '♠';
     if (couleur === 'etoile') return '★';
-    return '🃏'; // Joker
+    return '🃏';
 }
 
-// Lancement d'une partie de test en local
+// ACTION : Piocher une carte
+function actionPiocher() {
+    if (aPioche) {
+        alert("Vous avez déjà pioché ! Défaussez une carte pour finir votre tour.");
+        return;
+    }
+    if (pioche.length > 0) {
+        let cartePiochee = pioche.pop();
+        maMain.push(cartePiochee);
+        aPioche = true;
+        afficherMain();
+    }
+}
+
+// ACTION : Défausser une carte
+function actionDefausser(indexCarte) {
+    if (!aPioche) {
+        alert("Vous devez d'abord piocher une carte !");
+        return;
+    }
+    // On retire la carte de la main et on l'envoie dans la défausse
+    let carteDefaussee = maMain.splice(indexCarte, 1)[0];
+    defausse.push(carteDefaussee);
+    
+    aPioche = false; // Le tour est fini, on réinitialise pour le prochain tour
+    afficherMain();
+    afficherDefausse();
+}
+
 function initialiserPartieLocale() {
     pioche = melanger(genererDeck());
-    
-    // Calcul du nombre de cartes à distribuer (Manche 1 = 3 cartes)
     let nbCartes = mancheActuelle + 2; 
     
     for (let i = 0; i < nbCartes; i++) {
         maMain.push(pioche.pop());
     }
     
+    // On retourne la première carte de la pioche pour lancer la défausse
+    defausse.push(pioche.pop());
+    
     afficherMain();
+    afficherDefausse();
 }
 
-// On lance dès que la page charge
 window.onload = initialiserPartieLocale;
