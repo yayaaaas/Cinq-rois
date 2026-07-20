@@ -55,11 +55,21 @@ function afficherMain() {
     maMain.forEach((carte, index) => {
         const cardDiv = document.createElement('div');
         cardDiv.classList.add('card', carte.couleur);
-        // Au clic, on tente de défausser cette carte
-        cardDiv.setAttribute('onclick', `actionDefausser(${index})`);
+        
+        // Si la carte est un Atout ou Joker, on lui ajoute une distinction
+        let estAtout = estUnJokerOuAtout(carte);
+        if (estAtout) {
+            cardDiv.style.border = "2px solid #f1c40f"; // Bordure dorée
+        }
+
+        if (cartesSelectionnees.includes(index)) {
+            cardDiv.classList.add('carte-selectionnee');
+        }
+
+        cardDiv.onclick = () => verifierClicCarte(index);
         
         cardDiv.innerHTML = `
-            <div>${carte.valeur}</div>
+            <div>${carte.valeur} ${estAtout ? '⭐' : ''}</div>
             <div style="font-size: 24px;">${obtenirSymbole(carte.couleur)}</div>
             <div style="text-align: right;">${carte.valeur}</div>
         `;
