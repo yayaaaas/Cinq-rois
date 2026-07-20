@@ -165,3 +165,53 @@ function actionTrierMain() {
     // On rafraîchit l'affichage pour voir le résultat
     afficherMain();
 }
+
+// Fonction qui vérifie si un groupe de cartes forme une Famille valide
+function estUneFamille(groupe) {
+    if (groupe.length < 3) return false;
+    
+    // On ignore les jokers pour trouver la valeur de référence
+    let cartesNormales = groupe.filter(c => c.type !== 'joker');
+    if (cartesNormales.length === 0) return true; // Que des jokers = valide
+
+    let valeurRef = cartesNormales[0].valeur;
+    // Toutes les cartes non-jokers doivent avoir la même valeur
+    return cartesNormales.every(c => c.valeur === valeurRef);
+}
+
+// Fonction qui vérifie si un groupe de cartes forme une Suite valide
+function estUneSuite(groupe) {
+    if (groupe.length < 3) return false;
+    
+    let cartesNormales = groupe.filter(c => c.type !== 'joker');
+    if (cartesNormales.length === 0) return true; // Que des jokers
+
+    // Vérifier qu'elles ont toutes la même couleur
+    let couleurRef = cartesNormales[0].couleur;
+    if (!cartesNormales.every(c => c.couleur === couleurRef)) return false;
+
+    // Convertir en valeurs numériques et trier
+    let valeurs = cartesNormales.map(c => obtenirValeurNumerique(c.valeur)).sort((a, b) => a - b);
+    
+    // Vérifier les écarts en tenant compte des jokers disponibles
+    let nbJokers = groupe.length - cartesNormales.length;
+    for (let i = 0; i < valeurs.length - 1; i++) {
+        let ecart = valeurs[i+1] - valeurs[i] - 1;
+        if (ecart < 0) return false; // Doublon (ex: deux 5 de la même couleur)
+        nbJokers -= ecart;
+        if (nbJokers < 0) return false; // Pas assez de jokers pour combler le trou
+    }
+    return true;
+}
+
+// Action de test pour valider une sélection (à utiliser très bientôt !)
+function testerCombinaison(indicesSélectionnes) {
+    let groupe = indicesSélectionnes.map(i => maMain[i]);
+    if (estUneFamille(groupe)) {
+        alert("C'est une Famille valide !");
+    } else if (estUneSuite(groupe)) {
+        alert("C'est une Suite valide !");
+    } else {
+        alert("Combinaison invalide.");
+    }
+}
