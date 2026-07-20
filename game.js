@@ -141,3 +141,27 @@ function initialiserPartieLocale() {
 }
 
 window.onload = initialiserPartieLocale;
+
+// Fonction pour donner un score numérique aux valeurs afin de les trier facilement
+function obtenirValeurNumerique(valeur) {
+    if (valeur === 'V') return 11;
+    if (valeur === 'D') return 12;
+    if (valeur === 'R') return 13;
+    if (valeur === 'Joker') return 50; // Les jokers vont à la fin
+    return parseInt(valeur);
+}
+
+// ACTION : Trier la main par couleur puis par valeur
+function actionTrierMain() {
+    maMain.sort((a, b) => {
+        // 1. On compare d'abord les couleurs
+        if (a.couleur !== b.couleur) {
+            return COULEURS.indexOf(a.couleur) - COULEURS.indexOf(b.couleur);
+        }
+        // 2. Si c'est la même couleur, on compare les valeurs numériques
+        return obtenirValeurNumerique(a.valeur) - obtenirValeurNumerique(b.valeur);
+    });
+
+    // On rafraîchit l'affichage pour voir le résultat
+    afficherMain();
+}
