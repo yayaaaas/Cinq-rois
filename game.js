@@ -282,20 +282,28 @@ function initialiserPartieReseau() {
 }
 
 function recevoirActionReseau(donnees) {
-    if (donnees.type === 'DEBUT_PARTIE') {
+    // L'hôte reçoit la confirmation du Joueur 2 -> Il distribue le jeu !
+    if (donnees.type === 'JOUEUR_PRET' && estHote) {
+        document.getElementById('status-message').innerText = "Joueur 2 connecté ! C'est votre tour.";
+        initialiserPartieReseau();
+    }
+    else if (donnees.type === 'DEBUT_PARTIE') {
         pioche = donnees.contenu.pioche;
         maMain = donnees.contenu.mainJoueur2;
         defausse = donnees.contenu.defausse;
-        monTour = false; // Le joueur 2 attend
+        monTour = false; // Le joueur 2 attend son tour
+        
+        // Rafraîchissement complet de l'écran du Joueur 2
+        cartesSelectionnees = [];
         afficherMain();
         afficherDefausse();
         mettreAJourStatutTour();
     }
     else if (donnees.type === 'ACTION_PIOCHE_PIOCHE') {
-        pioche.pop(); // Retirer la carte piochée par l'autre joueur
+        pioche.pop();
     }
     else if (donnees.type === 'ACTION_PIOCHE_DEFAUSSE') {
-        defausse.pop(); // Retirer la carte de la défausse prise par l'autre joueur
+        defausse.pop();
         afficherDefausse();
     }
     else if (donnees.type === 'ACTION_DEFAUSSER') {
