@@ -27,22 +27,66 @@ let scoreAdversaire = 0;
 
 function afficherMenuMulti() {
     const multiPanel = document.getElementById('multi-panel');
-    multiPanel.style.display = multiPanel.style.display === 'none' ? 'block' : 'none';
+    if (multiPanel) {
+        multiPanel.style.display = multiPanel.style.display === 'none' ? 'block' : 'none';
+    }
 }
 
 function demarrerJeuUI() {
-    // Masquer le menu principal
+    let nameInput = document.getElementById('player-name').value.trim();
+    if (nameInput !== "") {
+        monPseudo = nameInput;
+    }
+    
+    // Affichage des zones de jeu
     document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('game-zone').style.display = 'block';
 
-    // Afficher les zones de jeu / conteneur principal
+    // S'assurer que le conteneur principal et le tapis sont bien réaffichés
     const gameContainer = document.getElementById('game-container');
-    if (gameContainer) gameContainer.style.display = 'flex'; // ou 'block'
+    if (gameContainer) gameContainer.style.display = '';
+
+    const table = document.getElementById('table');
+    if (table) table.style.display = '';
+
+    const tableauPose = document.getElementById('tableau-pose');
+    if (tableauPose) tableauPose.style.display = '';
 }
 
 function lancerModeSolo() {
     modeJeu = "SOLO";
     demarrerJeuUI();
     initialiserPartieSolo();
+}
+
+function retourAccueil() {
+    const confirmer = confirm("Voulez-vous vraiment quitter la partie et revenir au menu principal ?");
+    if (!confirmer) return;
+
+    // Réinitialisation des états
+    pioche = [];
+    defausse = [];
+    maMain = [];
+    cartesSelectionnees = [];
+    groupesAposer = [];
+    aPioche = false;
+    monTour = false;
+    aPoseMaMain = false;
+    estDernierTour = false;
+
+    if (typeof peer !== 'undefined' && peer) {
+        try { peer.destroy(); } catch(e) {}
+    }
+
+    // Basculement d'affichage
+    document.getElementById('game-zone').style.display = 'none';
+    document.getElementById('main-menu').style.display = 'block';
+
+    const multiPanel = document.getElementById('multi-panel');
+    if (multiPanel) multiPanel.style.display = 'none';
+
+    const statusMsg = document.getElementById('status-message');
+    if (statusMsg) statusMsg.innerText = "Préparation de la partie...";
 }
 
 // ==========================================
@@ -433,7 +477,6 @@ function actionDefausserBouton() {
         return;
     }
 
-    // Sécurité : Si la main est déjà vide parce qu'on a tout posé
     if (maMain.length === 0 && aPoseMaMain) {
         if (modeJeu === "SOLO") {
             passerTourSuivantSolo();
@@ -446,21 +489,16 @@ function actionDefausserBouton() {
         return;
     }
 
-    // --- CORRECTION DU BLOCAGE ---
-    // Si des groupes sont préparés ET qu'il ne reste qu'1 seule carte en main, 
-    // on valide automatiquement l'état de pose !
     let totalCartesGroupes = 0;
     groupesAposer.forEach(g => totalCartesGroupes += g.length);
 
     if (groupesAposer.length > 0 && maMain.length === 1) {
-        // Vérifier que tous les groupes préparés sont valides
         let tousValides = groupesAposer.every(g => validerCombinaison(g));
         if (tousValides) {
-            aPoseMaMain = true; // On autorise la pose !
+            aPoseMaMain = true; 
         }
     }
 
-    // VÉRIFICATION RÈGLE : Interdiction de défausser si pioché dans la défausse sans poser
     if (piocheDepuisDefausse && !aPoseMaMain && !estDernierTour) {
         alert("⚠️ RÈGLE : Vous avez pioché dans la défausse, vous êtes OBLIGÉ de poser toute votre main ce tour-ci ! Cliquez d'abord sur 'Poser toute ma main !' ou vérifiez vos combinaisons.");
         return;
@@ -471,30 +509,24 @@ function actionDefausserBouton() {
         return;
     }
 
-    // Retirer la carte sélectionnée de la main et l'ajouter à la défausse
     let indexCarte = cartesSelectionnees[0];
     let carteDefaussee = maMain.splice(indexCarte, 1)[0];
     defausse.push(carteDefaussee);
 
-    // Réinitialisation des états du tour
     cartesSelectionnees = [];
     aPioche = false;
     monTour = false;
     piocheDepuisDefausse = false;
 
-    // Actualiser l'affichage
     afficherMain();
     afficherDefausse();
     mettreAJourStatutTour();
 
-    // ==========================================
-    // GESTION DU MODE SOLO (CONTRE LES BOTS)
-    // ==========================================
     if (modeJeu === "SOLO") {
         if (aPoseMaMain) {
             if (!estDernierTour) {
                 estDernierTour = true;
-                indexJoueurQuiAPose = 0; // 0 = Vous
+                indexJoueurQuiAPose = 0; 
                 alert("Vous avez posé votre main ! Les 3 bots jouent leur DERNIER TOUR.");
             }
             aPoseMaMain = false;
@@ -503,9 +535,6 @@ function actionDefausserBouton() {
         return;
     }
 
-    // ==========================================
-    // GESTION DU MODE MULTIJOUEUR (RÉSEAU)
-    // ==========================================
     if (estDernierTour) {
         let mesPenalites = calculerPointsMain(maMain);
         scoreJoueur += mesPenalites;
@@ -614,8 +643,10 @@ function ajouterLigneScoreTableau(manche, penVous, penAdversaire) {
     `;
     tbody.appendChild(tr);
 
-    document.getElementById('total-joueur').innerText = `${scoreJoueur} pts`;
-    document.getElementById('total-adversaire').innerText = `${scoreAdversaire} pts`;
+    const totJ = document.getElementById('total-joueur');
+    const totA = document.getElementById('total-adversaire');
+    if (totJ) totJ.innerText = `${scoreJoueur} pts`;
+    if (totA) totA.innerText = `${scoreAdversaire} pts`;
 }
 
 function ajouterLigneScoreSolo(manche, penHumain, penBot1, penBot2, penBot3) {
@@ -632,10 +663,15 @@ function ajouterLigneScoreSolo(manche, penHumain, penBot1, penBot2, penBot3) {
     `;
     tbody.appendChild(tr);
 
-    document.getElementById('total-joueur').innerText = `${scoreJoueur} pts`;
-    document.getElementById('total-bot-1').innerText = `${bots[0].score} pts`;
-    document.getElementById('total-bot-2').innerText = `${bots[1].score} pts`;
-    document.getElementById('total-bot-3').innerText = `${bots[2].score} pts`;
+    const totJ = document.getElementById('total-joueur');
+    const totB1 = document.getElementById('total-bot-1');
+    const totB2 = document.getElementById('total-bot-2');
+    const totB3 = document.getElementById('total-bot-3');
+
+    if (totJ) totJ.innerText = `${scoreJoueur} pts`;
+    if (totB1) totB1.innerText = `${bots[0].score} pts`;
+    if (totB2) totB2.innerText = `${bots[1].score} pts`;
+    if (totB3) totB3.innerText = `${bots[2].score} pts`;
 }
 
 function passerMancheSuivante() {
@@ -957,60 +993,5 @@ function fermerModal(idModal) {
     const modal = document.getElementById(idModal);
     if (modal) {
         modal.classList.remove('open');
-    }
-}
-
-// ==========================================
-// FONCTION DE RETOUR À L'ACCUEIL / MENU
-// ==========================================
-function retourAccueil() {
-    // Confirmation si une partie est en cours
-    const confirmer = confirm("Voulez-vous vraiment quitter la partie et revenir au menu principal ?");
-    if (!confirmer) return;
-
-    // 1. Réinitialisation des variables logiques
-    pioche = [];
-    defausse = [];
-    maMain = [];
-    cartesSelectionnees = [];
-    groupesAposer = [];
-    aPioche = false;
-    monTour = false;
-    aPoseMaMain = false;
-    estDernierTour = false;
-
-    // Si on a des bots ou des connexions multijoueur
-    if (typeof Peer !== 'undefined' && peer) {
-        try { peer.destroy(); } catch(e) {}
-    }
-
-    // 2. Masquer les éléments de jeu
-    const gameContainer = document.getElementById('game-container');
-    if (gameContainer) {
-        gameContainer.style.display = 'none';
-    }
-    
-    const table = document.getElementById('table');
-    if (table) table.style.display = 'none';
-
-    const tableauPose = document.getElementById('tableau-pose');
-    if (tableauPose) tableauPose.style.display = 'none';
-
-    // 3. Réafficher le menu principal
-    const mainMenu = document.getElementById('main-menu');
-    if (mainMenu) {
-        mainMenu.style.display = 'block';
-    }
-
-    // Masquer le sous-panel multijoueur s'il était ouvert
-    const multiPanel = document.getElementById('multi-panel');
-    if (multiPanel) {
-        multiPanel.style.display = 'none';
-    }
-
-    // Réinitialiser les messages de statut
-    const statusMsg = document.getElementById('status-message');
-    if (statusMsg) {
-        statusMsg.innerText = "Bienvenue ! Choisissez un mode de jeu.";
     }
 }
