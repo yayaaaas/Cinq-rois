@@ -1,7 +1,6 @@
 var peer = null;
 var conn = null;
 
-// 1. L'hôte crée la partie
 function creerPartie() {
     const codePartie = "5ROIS-" + Math.floor(1000 + Math.random() * 9000);
     peer = new Peer(codePartie);
@@ -11,6 +10,9 @@ function creerPartie() {
         document.getElementById('status-message').innerText = "En attente du Joueur 2...";
         estHote = true;
         monTour = true;
+        
+        // On affiche l'interface de jeu
+        demarrerJeuUI();
     });
 
     peer.on('connection', (connection) => {
@@ -19,7 +21,6 @@ function creerPartie() {
     });
 }
 
-// 2. Le second joueur rejoint la partie
 function rejoindrePartie() {
     const codeEntre = document.getElementById('join-id-input').value.trim();
     if (!codeEntre) {
@@ -34,6 +35,9 @@ function rejoindrePartie() {
         initialiserConnexion();
         estHote = false;
         monTour = false;
+        
+        // On affiche l'interface de jeu
+        demarrerJeuUI();
     });
 }
 
