@@ -117,6 +117,10 @@ function estUneSuite(groupe) {
     return true;
 }
 
+function validerCombinaison(groupe) {
+    return estUneFamille(groupe) || estUneSuite(groupe);
+}
+
 // ==========================================
 // 3. AFFICHAGE DE L'INTERFACE
 // ==========================================
@@ -277,10 +281,12 @@ function actionPiocher() {
     let cartePiochee = pioche.pop();
     maMain.push(cartePiochee);
     aPioche = true;
-    piocheDepuisDefausse = false; // Pioche normale
+    piocheDepuisDefausse = false; 
     afficherMain();
 
-    envoyerActionReseau('ACTION_PIOCHE_PIOCHE', {});
+    if (modeJeu === "MULTI") {
+        envoyerActionReseau('ACTION_PIOCHE_PIOCHE', {});
+    }
 }
 
 function actionPiocherDefausse() {
@@ -303,12 +309,14 @@ function actionPiocherDefausse() {
     let cartePrelee = defausse.pop();
     maMain.push(cartePrelee);
     aPioche = true;
-    piocheDepuisDefausse = true; // Marquage de la règle
+    piocheDepuisDefausse = true; 
     
     afficherMain();
     afficherDefausse();
 
-    envoyerActionReseau('ACTION_PIOCHE_DEFAUSSE', {});
+    if (modeJeu === "MULTI") {
+        envoyerActionReseau('ACTION_PIOCHE_DEFAUSSE', {});
+    }
 }
 
 function actionTrierMain() {
@@ -353,7 +361,6 @@ function validerEtPoserMain() {
         return;
     }
 
-    // Vider les groupes invalides ou vides
     groupesAposer = groupesAposer.filter(g => g.length > 0);
 
     if (groupesAposer.length === 0) {
@@ -361,17 +368,14 @@ function validerEtPoserMain() {
         return;
     }
 
-    // 1. Calculer le nombre total de cartes placées dans les groupes
     let totalCartesDansGroupes = 0;
     groupesAposer.forEach(g => totalCartesDansGroupes += g.length);
 
-    // Pour poser, il faut que (Toutes vos cartes - 1) soient dans des combinaisons valides
     if (totalCartesDansGroupes !== maMain.length - 1) {
         alert(`Vous devez placer exactement ${maMain.length - 1} cartes dans vos combinaisons (il doit vous rester exactement 1 carte à défausser) !`);
         return;
     }
 
-    // 2. Vérifier la validité de chaque groupe
     for (let i = 0; i < groupesAposer.length; i++) {
         if (!validerCombinaison(groupesAposer[i])) {
             alert(`Le groupe ${i + 1} n'est pas une combinaison valide (suite ou brelan/carré) !`);
@@ -379,7 +383,6 @@ function validerEtPoserMain() {
         }
     }
 
-    // 3. Identifier la carte restante qui n'est dans aucun groupe
     let indicesCartesPosees = [];
     groupesAposer.forEach(g => {
         g.forEach(carte => {
@@ -390,7 +393,6 @@ function validerEtPoserMain() {
         });
     });
 
-    // La carte restante à défausser est celle dont l'indice n'est pas dans indicesCartesPosees
     let nouvelleMain = [];
     let carteADefausser = null;
 
@@ -402,27 +404,23 @@ function validerEtPoserMain() {
         }
     });
 
-    // 4. On valide la pose
     aPoseMaMain = true;
     
-    // Défausse automatique de la carte restante
     if (carteADefausser) {
         defausse.push(carteADefausser);
         afficherDefausse();
     }
 
-    // On retire les cartes posées de la main
     maMain = [];
     afficherMain();
     afficherGroupesAPoser();
 
     alert("Vos combinaisons sont posées et votre carte restante a été défaussée !");
 
-    // 5. Gestion de la fin de tour
     if (modeJeu === "SOLO") {
         if (!estDernierTour) {
             estDernierTour = true;
-            indexJoueurQuiAPose = 0; // Vous avez posé en premier
+            indexJoueurQuiAPose = 0; 
             alert("Vous avez fermé la manche ! C'est le DERNIER TOUR pour les bots.");
         }
         passerTourSuivantSolo();
@@ -435,7 +433,6 @@ function actionDefausserBouton() {
         return;
     }
 
-    // Sécurité : Si la main est déjà vide parce qu'on a tout posé, on passe directement le tour
     if (maMain.length === 0 && aPoseMaMain) {
         if (modeJeu === "SOLO") {
             passerTourSuivantSolo();
@@ -448,7 +445,6 @@ function actionDefausserBouton() {
         return;
     }
 
-    // VÉRIFICATION RÈGLE : Interdiction de défausser sans avoir posé si pioché dans la défausse
     if (piocheDepuisDefausse && !aPoseMaMain && !estDernierTour) {
         alert("⚠️ RÈGLE : Vous avez pioché dans la défausse, vous êtes OBLIGÉ de poser toute votre main ce tour-ci !");
         return;
@@ -459,30 +455,24 @@ function actionDefausserBouton() {
         return;
     }
 
-    // Retirer la carte sélectionnée de la main et l'ajouter à la défausse
     let indexCarte = cartesSelectionnees[0];
     let carteDefaussee = maMain.splice(indexCarte, 1)[0];
     defausse.push(carteDefaussee);
 
-    // Réinitialisation des états du tour
     cartesSelectionnees = [];
     aPioche = false;
     monTour = false;
     piocheDepuisDefausse = false;
 
-    // Actualiser l'affichage
     afficherMain();
     afficherDefausse();
     mettreAJourStatutTour();
 
-    // ==========================================
-    // GESTION DU MODE SOLO (CONTRE LES BOTS)
-    // ==========================================
     if (modeJeu === "SOLO") {
         if (aPoseMaMain) {
             if (!estDernierTour) {
                 estDernierTour = true;
-                indexJoueurQuiAPose = 0; // 0 = Vous
+                indexJoueurQuiAPose = 0; 
                 alert("Vous avez posé votre main ! Les 3 bots jouent leur DERNIER TOUR.");
             }
             aPoseMaMain = false;
@@ -491,9 +481,6 @@ function actionDefausserBouton() {
         return;
     }
 
-    // ==========================================
-    // GESTION DU MODE MULTIJOUEUR (RÉSEAU)
-    // ==========================================
     if (estDernierTour) {
         let mesPenalites = calculerPointsMain(maMain);
         scoreJoueur += mesPenalites;
@@ -548,8 +535,84 @@ function calculerPointsMain(main) {
 }
 
 // ==========================================
-// 5. GESTION DES MANCHES ET DU RÉSEAU
+// 5. GESTION DES SCORES ET DU RÉSEAU
 // ==========================================
+function preparerTableauScoresUI() {
+    const headerTr = document.getElementById('score-header');
+    const footerTr = document.getElementById('score-footer');
+    const tbody = document.getElementById('lignes-scores');
+
+    if (!headerTr || !footerTr || !tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (modeJeu === "SOLO") {
+        headerTr.innerHTML = `
+            <th>Manche</th>
+            <th>${monPseudo}</th>
+            <th>${bots[0].nom}</th>
+            <th>${bots[1].nom}</th>
+            <th>${bots[2].nom}</th>
+        `;
+
+        footerTr.innerHTML = `
+            <th>TOTAL</th>
+            <th id="total-joueur">0</th>
+            <th id="total-bot-1">0</th>
+            <th id="total-bot-2">0</th>
+            <th id="total-bot-3">0</th>
+        `;
+    } else {
+        headerTr.innerHTML = `
+            <th>Manche</th>
+            <th>Vous</th>
+            <th>Adversaire</th>
+        `;
+
+        footerTr.innerHTML = `
+            <th>TOTAL</th>
+            <th id="total-joueur">0</th>
+            <th id="total-adversaire">0</th>
+        `;
+    }
+}
+
+function ajouterLigneScoreTableau(manche, penVous, penAdversaire) {
+    const tbody = document.getElementById('lignes-scores');
+    if (!tbody) return;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>Manche ${manche}</td>
+        <td>${penVous} pts</td>
+        <td>${penAdversaire} pts</td>
+    `;
+    tbody.appendChild(tr);
+
+    document.getElementById('total-joueur').innerText = `${scoreJoueur} pts`;
+    document.getElementById('total-adversaire').innerText = `${scoreAdversaire} pts`;
+}
+
+function ajouterLigneScoreSolo(manche, penHumain, penBot1, penBot2, penBot3) {
+    const tbody = document.getElementById('lignes-scores');
+    if (!tbody) return;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>M${manche} (${manche + 2} cartes)</td>
+        <td>${penHumain} pts</td>
+        <td>${penBot1} pts</td>
+        <td>${penBot2} pts</td>
+        <td>${penBot3} pts</td>
+    `;
+    tbody.appendChild(tr);
+
+    document.getElementById('total-joueur').innerText = `${scoreJoueur} pts`;
+    document.getElementById('total-bot-1').innerText = `${bots[0].score} pts`;
+    document.getElementById('total-bot-2').innerText = `${bots[1].score} pts`;
+    document.getElementById('total-bot-3').innerText = `${bots[2].score} pts`;
+}
+
 function passerMancheSuivante() {
     mancheActuelle++;
     
@@ -566,6 +629,12 @@ function passerMancheSuivante() {
 }
 
 function initialiserPartieReseau() {
+    if (mancheActuelle === 1) {
+        scoreJoueur = 0;
+        scoreAdversaire = 0;
+        preparerTableauScoresUI();
+    }
+
     pioche = melanger(genererDeck());
     let nbCartes = mancheActuelle + 2; 
     
@@ -605,7 +674,7 @@ function initialiserPartieReseau() {
 
 function recevoirActionReseau(donnees) {
     if (donnees.type === 'JOUEUR_PRET' && estHote) {
-        demarrerJeuUI(); // Le Joueur 2 s'est connecté -> On lance le tapis de jeu !
+        demarrerJeuUI(); 
         document.getElementById('status-message').innerText = "Joueur 2 connecté ! C'est votre tour.";
         initialiserPartieReseau();
     }
@@ -676,22 +745,6 @@ function recevoirActionReseau(donnees) {
     }
 }
 
-function ajouterLigneScoreTableau(manche, penVous, penAdversaire) {
-    const tbody = document.getElementById('lignes-scores');
-    if (!tbody) return;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td>Manche ${manche}</td>
-        <td>${penVous} pts</td>
-        <td>${penAdversaire} pts</td>
-    `;
-    tbody.appendChild(tr);
-
-    document.getElementById('total-joueur').innerText = `${scoreJoueur} pts`;
-    document.getElementById('total-adversaire').innerText = `${scoreAdversaire} pts`;
-}
-
 // ==========================================
 // 6. GESTION DU MODE SOLO (CONTRE 3 BOTS)
 // ==========================================
@@ -701,14 +754,20 @@ let bots = [
     { id: 3, nom: "Bot 3 (Robot)", main: [], score: 0 }
 ];
 
-let listeJoueursSolo = []; // Contiendra : Vous + les 3 bots
+let listeJoueursSolo = []; 
 let indexJoueurActuel = 0;
+let indexJoueurQuiAPose = -1;
 
 function initialiserPartieSolo() {
+    if (mancheActuelle === 1) {
+        scoreJoueur = 0;
+        bots.forEach(b => b.score = 0);
+        preparerTableauScoresUI();
+    }
+
     pioche = melanger(genererDeck());
     let nbCartes = mancheActuelle + 2;
 
-    // Distribution
     maMain = [];
     for (let i = 0; i < nbCartes; i++) {
         maMain.push(pioche.pop());
@@ -728,7 +787,6 @@ function initialiserPartieSolo() {
     cartesSelectionnees = [];
     aPioche = false;
 
-    // Liste des joueurs pour le tour par tour
     listeJoueursSolo = [
         { type: 'HUMAIN', nom: monPseudo },
         { type: 'BOT', botData: bots[0] },
@@ -736,7 +794,7 @@ function initialiserPartieSolo() {
         { type: 'BOT', botData: bots[2] }
     ];
 
-    indexJoueurActuel = 0; // Vous commencez
+    indexJoueurActuel = 0; 
     monTour = true;
 
     afficherMain();
@@ -746,20 +804,15 @@ function initialiserPartieSolo() {
     mettreAJourStatutTour();
 }
 
-// Fonction d'IA : Tour automatique d'un Bot
 function jouerTourBot(bot) {
     document.getElementById('status-message').innerText = `🤖 ${bot.nom} réfléchit...`;
 
     setTimeout(() => {
-        // 1. Piocher
         if (pioche.length === 0) actionPiocher(); 
         let cartePiochee = pioche.pop();
         bot.main.push(cartePiochee);
 
-        // 2. Vérification si le bot peut poser toute sa main (sauf 1 carte à défausser)
-        // Pour garder un bot simple : s'il lui reste très peu de cartes mal assorties ou s'il est au dernier tour
         if (estDernierTour) {
-            // Pendant le dernier tour, le bot jette juste sa pire carte
             bot.main.sort((a, b) => obtenirValeurNumerique(b.valeur) - obtenirValeurNumerique(a.valeur));
             let carteDefaussee = bot.main.shift();
             defausse.push(carteDefaussee);
@@ -768,12 +821,10 @@ function jouerTourBot(bot) {
             return;
         }
 
-        // Si le bot décide de poser (simulation d'une main complète)
         let mainSansPire = [...bot.main];
         mainSansPire.sort((a, b) => obtenirValeurNumerique(b.valeur) - obtenirValeurNumerique(a.valeur));
-        let carteDefaussee = mainSansPire.shift(); // Carte à défausser
+        let carteDefaussee = mainSansPire.shift();
 
-        // Si le bot n'a pas encore posé et qu'il est en mesure de fermer la manche (probabilité basée sur la manche)
         let chanceDePoser = bot.main.length <= 4 ? 0.4 : 0.1; 
         if (!estDernierTour && Math.random() < chanceDePoser) {
             bot.main = mainSansPire;
@@ -788,7 +839,6 @@ function jouerTourBot(bot) {
             return;
         }
 
-        // Tour normal : défausser la carte la plus forte
         bot.main.sort((a, b) => obtenirValeurNumerique(b.valeur) - obtenirValeurNumerique(a.valeur));
         carteDefaussee = bot.main.shift();
         defausse.push(carteDefaussee);
@@ -804,7 +854,6 @@ function passerTourSuivantSolo() {
 
     mettreAJourListeJoueursUI();
 
-    // VÉRIFICATION : Si le dernier tour vient de se terminer (retour au premier joueur qui avait posé)
     if (estDernierTour && indexJoueurActuel === indexJoueurQuiAPose) {
         finirMancheSolo();
         return;
@@ -837,30 +886,28 @@ function mettreAJourListeJoueursUI() {
     });
 }
 
-let indexJoueurQuiAPose = -1;
-
 function finirMancheSolo() {
-    let rekapScores = `--- FIN DE LA MANCHE ${mancheActuelle} ---\n\n`;
-
-    // 1. Calcul des pénalités pour le joueur humain
     let penHumain = (indexJoueurQuiAPose === 0) ? 0 : calculerPointsMain(maMain);
     scoreJoueur += penHumain;
-    rekapScores += `- ${monPseudo} : ${penHumain} pts (Total: ${scoreJoueur} pts)\n`;
 
-    // 2. Calcul des pénalités pour chaque Bot
-    bots.forEach((bot, idx) => {
-        let indexBotDansListe = idx + 1;
-        let penBot = (indexJoueurQuiAPose === indexBotDansListe) ? 0 : calculerPointsMain(bot.main);
-        bot.score += penBot;
-        rekapScores += `- ${bot.nom} : ${penBot} pts (Total: ${bot.score} pts)\n`;
-    });
+    let penBot1 = (indexJoueurQuiAPose === 1) ? 0 : calculerPointsMain(bots[0].main);
+    let penBot2 = (indexJoueurQuiAPose === 2) ? 0 : calculerPointsMain(bots[1].main);
+    let penBot3 = (indexJoueurQuiAPose === 3) ? 0 : calculerPointsMain(bots[2].main);
+
+    bots[0].score += penBot1;
+    bots[1].score += penBot2;
+    bots[2].score += penBot3;
+
+    let rekapScores = `--- FIN DE LA MANCHE ${mancheActuelle} ---\n\n`;
+    rekapScores += `- ${monPseudo} : +${penHumain} pts (Total: ${scoreJoueur} pts)\n`;
+    rekapScores += `- ${bots[0].nom} : +${penBot1} pts (Total: ${bots[0].score} pts)\n`;
+    rekapScores += `- ${bots[1].nom} : +${penBot2} pts (Total: ${bots[1].score} pts)\n`;
+    rekapScores += `- ${bots[2].nom} : +${penBot3} pts (Total: ${bots[2].score} pts)\n`;
 
     alert(rekapScores);
 
-    // Mettre à jour le tableau HTML des scores
-    ajouterLigneScoreTableau(mancheActuelle, penHumain, bots[0].score); // Affiche au moins le premier bot dans la colonne adverse
+    ajouterLigneScoreSolo(mancheActuelle, penHumain, penBot1, penBot2, penBot3);
 
-    // Passer à la manche suivante !
     mancheActuelle++;
     if (mancheActuelle > 11) {
         alert("🎮 PARTIE SOLO TERMINÉE ! Les 11 manches ont été jouées.");
