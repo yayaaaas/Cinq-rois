@@ -439,6 +439,12 @@ function actionDefausserBouton() {
 
     // Si on est en mode SOLO, on passe le tour au premier bot
     if (modeJeu === "SOLO") {
+        if (aPoseMaMain) {
+            estDernierTour = true;
+            indexJoueurQuiAPose = 0; // 0 = Vous
+            aPoseMaMain = false;
+            alert("Vous avez posé votre main ! Les 3 bots jouent leur DERNIER TOUR.");
+        }
         passerTourSuivantSolo();
         return;
     }
@@ -669,22 +675,51 @@ function jouerTourBot(bot) {
     document.getElementById('status-message').innerText = `🤖 ${bot.nom} réfléchit...`;
 
     setTimeout(() => {
-        // 1. Piocher (Pioche normal pour le Bot)
-        if (pioche.length === 0) actionPiocher(); // Remélange si besoin
+        // 1. Piocher
+        if (pioche.length === 0) actionPiocher(); 
         let cartePiochee = pioche.pop();
         bot.main.push(cartePiochee);
 
-        // 2. Le Bot choisit la carte la moins utile à défausser (la plus forte valeur)
+        // 2. Vérification si le bot peut poser toute sa main (sauf 1 carte à défausser)
+        // Pour garder un bot simple : s'il lui reste très peu de cartes mal assorties ou s'il est au dernier tour
+        if (estDernierTour) {
+            // Pendant le dernier tour, le bot jette juste sa pire carte
+            bot.main.sort((a, b) => obtenirValeurNumerique(b.valeur) - obtenirValeurNumerique(a.valeur));
+            let carteDefaussee = bot.main.shift();
+            defausse.push(carteDefaussee);
+            afficherDefausse();
+            passerTourSuivantSolo();
+            return;
+        }
+
+        // Si le bot décide de poser (simulation d'une main complète)
+        let mainSansPire = [...bot.main];
+        mainSansPire.sort((a, b) => obtenirValeurNumerique(b.valeur) - obtenirValeurNumerique(a.valeur));
+        let carteDefaussee = mainSansPire.shift(); // Carte à défausser
+
+        // Si le bot n'a pas encore posé et qu'il est en mesure de fermer la manche (probabilité basée sur la manche)
+        let chanceDePoser = bot.main.length <= 4 ? 0.4 : 0.1; 
+        if (!estDernierTour && Math.random() < chanceDePoser) {
+            bot.main = mainSansPire;
+            defausse.push(carteDefaussee);
+            afficherDefausse();
+
+            estDernierTour = true;
+            indexJoueurQuiAPose = indexJoueurActuel;
+
+            alert(`⚠️ ${bot.nom} a posé toute sa main ! C'est le DERNIER TOUR pour tout le monde !`);
+            passerTourSuivantSolo();
+            return;
+        }
+
+        // Tour normal : défausser la carte la plus forte
         bot.main.sort((a, b) => obtenirValeurNumerique(b.valeur) - obtenirValeurNumerique(a.valeur));
-        let carteDefaussee = bot.main.shift(); // Il jette sa carte la plus forte
+        carteDefaussee = bot.main.shift();
         defausse.push(carteDefaussee);
 
         afficherDefausse();
-        document.getElementById('status-message').innerText = `🤖 ${bot.nom} a défaussé le ${carteDefaussee.valeur} de ${carteDefaussee.couleur}.`;
-
-        // Pass au joueur suivant
         passerTourSuivantSolo();
-    }, 1500); // Délai de 1.5s pour voir le bot jouer
+    }, 1200);
 }
 
 function passerTourSuivantSolo() {
@@ -692,6 +727,12 @@ function passerTourSuivantSolo() {
     let joueurActuel = listeJoueursSolo[indexJoueurActuel];
 
     mettreAJourListeJoueursUI();
+
+    // VÉRIFICATION : Si le dernier tour vient de se terminer (retour au premier joueur qui avait posé)
+    if (estDernierTour && indexJoueurActuel === indexJoueurQuiAPose) {
+        finirMancheSolo();
+        return;
+    }
 
     if (joueurActuel.type === 'HUMAIN') {
         monTour = true;
@@ -718,4 +759,38 @@ function mettreAJourListeJoueursUI() {
         div.innerHTML = `<b>${nomAffiche}</b>`;
         container.appendChild(div);
     });
+}
+
+let indexJoueurQuiAPose = -1;
+
+function finirMancheSolo() {
+    let rekapScores = `--- FIN DE LA MANCHE ${mancheActuelle} ---\n\n`;
+
+    // 1. Calcul des pénalités pour le joueur humain
+    let penHumain = (indexJoueurQuiAPose === 0) ? 0 : calculerPointsMain(maMain);
+    scoreJoueur += penHumain;
+    rekapScores += `- ${monPseudo} : ${penHumain} pts (Total: ${scoreJoueur} pts)\n`;
+
+    // 2. Calcul des pénalités pour chaque Bot
+    bots.forEach((bot, idx) => {
+        let indexBotDansListe = idx + 1;
+        let penBot = (indexJoueurQuiAPose === indexBotDansListe) ? 0 : calculerPointsMain(bot.main);
+        bot.score += penBot;
+        rekapScores += `- ${bot.nom} : ${penBot} pts (Total: ${bot.score} pts)\n`;
+    });
+
+    alert(rekapScores);
+
+    // Mettre à jour le tableau HTML des scores
+    ajouterLigneScoreTableau(mancheActuelle, penHumain, bots[0].score); // Affiche au moins le premier bot dans la colonne adverse
+
+    // Passer à la manche suivante !
+    mancheActuelle++;
+    if (mancheActuelle > 11) {
+        alert("🎮 PARTIE SOLO TERMINÉE ! Les 11 manches ont été jouées.");
+        document.getElementById('status-message').innerText = "🏆 Partie terminée !";
+    } else {
+        alert(`Début de la Manche ${mancheActuelle} (${mancheActuelle + 2} cartes) !`);
+        initialiserPartieSolo();
+    }
 }
