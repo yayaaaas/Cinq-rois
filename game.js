@@ -355,7 +355,7 @@ function actionDefausserBouton() {
         let mesPenalites = calculerPointsMain(maMain);
         scoreJoueur += mesPenalites;
         
-        // Mise à jour visuelle du tableau côté joueur perdant
+        // Celui qui s'exécute ici est le perdant de la manche (mesPenalites pour lui, 0 pour l'autre)
         ajouterLigneScoreTableau(mancheActuelle, mesPenalites, 0);
 
         alert(`Fin de la manche ${mancheActuelle} ! Vous écopez de ${mesPenalites} points de pénalité.`);
