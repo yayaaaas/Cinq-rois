@@ -22,6 +22,30 @@ let piocheDepuisDefausse = false; // Règle : piocher défausse obligatoirement 
 let scoreJoueur = 0;
 let scoreAdversaire = 0;
 
+let monPseudo = "Joueur 1";
+let modeJeu = "MULTI"; // "SOLO" ou "MULTI"
+
+function afficherMenuMulti() {
+    const multiPanel = document.getElementById('multi-panel');
+    multiPanel.style.display = multiPanel.style.display === 'none' ? 'block' : 'none';
+}
+
+function demarrerJeuUI() {
+    let nameInput = document.getElementById('player-name').value.trim();
+    if (nameInput !== "") {
+        monPseudo = nameInput;
+    }
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('game-zone').style.display = 'block';
+}
+
+function lancerModeSolo() {
+    modeJeu = "SOLO";
+    demarrerJeuUI();
+    alert(`Bienvenue ${monPseudo} ! Lancement de la partie Solo contre 3 Bots...`);
+    // Prochaine étape : initialiser la partie contre les 3 Bots !
+}
+
 // ==========================================
 // 2. GÉNÉRATION DU DECK ET TRI
 // ==========================================
