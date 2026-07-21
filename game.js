@@ -602,3 +602,113 @@ function ajouterLigneScoreTableau(manche, penVous, penAdversaire) {
     document.getElementById('total-joueur').innerText = `${scoreJoueur} pts`;
     document.getElementById('total-adversaire').innerText = `${scoreAdversaire} pts`;
 }
+
+// ==========================================
+// 6. GESTION DU MODE SOLO (CONTRE 3 BOTS)
+// ==========================================
+let bots = [
+    { id: 1, nom: "Bot 1 (Robot)", main: [], score: 0 },
+    { id: 2, nom: "Bot 2 (Robot)", main: [], score: 0 },
+    { id: 3, nom: "Bot 3 (Robot)", main: [], score: 0 }
+];
+
+let listeJoueursSolo = []; // Contiendra : Vous + les 3 bots
+let indexJoueurActuel = 0;
+
+function initialiserPartieSolo() {
+    pioche = melanger(genererDeck());
+    let nbCartes = mancheActuelle + 2;
+
+    // Distribution
+    maMain = [];
+    for (let i = 0; i < nbCartes; i++) {
+        maMain.push(pioche.pop());
+    }
+
+    bots.forEach(bot => {
+        bot.main = [];
+        for (let i = 0; i < nbCartes; i++) {
+            bot.main.push(pioche.pop());
+        }
+    });
+
+    defausse = [pioche.pop()];
+    aPoseMaMain = false;
+    estDernierTour = false;
+    groupesAposer = [];
+    cartesSelectionnees = [];
+    aPioche = false;
+
+    // Liste des joueurs pour le tour par tour
+    listeJoueursSolo = [
+        { type: 'HUMAIN', nom: monPseudo },
+        { type: 'BOT', botData: bots[0] },
+        { type: 'BOT', botData: bots[1] },
+        { type: 'BOT', botData: bots[2] }
+    ];
+
+    indexJoueurActuel = 0; // Vous commencez
+    monTour = true;
+
+    afficherMain();
+    afficherDefausse();
+    afficherGroupesAPoser();
+    mettreAJourListeJoueursUI();
+    mettreAJourStatutTour();
+}
+
+// Fonction d'IA : Tour automatique d'un Bot
+function jouerTourBot(bot) {
+    document.getElementById('status-message').innerText = `🤖 ${bot.nom} réfléchit...`;
+
+    setTimeout(() => {
+        // 1. Piocher (Pioche normal pour le Bot)
+        if (pioche.length === 0) actionPiocher(); // Remélange si besoin
+        let cartePiochee = pioche.pop();
+        bot.main.push(cartePiochee);
+
+        // 2. Le Bot choisit la carte la moins utile à défausser (la plus forte valeur)
+        bot.main.sort((a, b) => obtenirValeurNumerique(b.valeur) - obtenirValeurNumerique(a.valeur));
+        let carteDefaussee = bot.main.shift(); // Il jette sa carte la plus forte
+        defausse.push(carteDefaussee);
+
+        afficherDefausse();
+        document.getElementById('status-message').innerText = `🤖 ${bot.nom} a défaussé le ${carteDefaussee.valeur} de ${carteDefaussee.couleur}.`;
+
+        // Pass au joueur suivant
+        passerTourSuivantSolo();
+    }, 1500); // Délai de 1.5s pour voir le bot jouer
+}
+
+function passerTourSuivantSolo() {
+    indexJoueurActuel = (indexJoueurActuel + 1) % listeJoueursSolo.length;
+    let joueurActuel = listeJoueursSolo[indexJoueurActuel];
+
+    mettreAJourListeJoueursUI();
+
+    if (joueurActuel.type === 'HUMAIN') {
+        monTour = true;
+        aPioche = false;
+        mettreAJourStatutTour();
+    } else {
+        monTour = false;
+        jouerTourBot(joueurActuel.botData);
+    }
+}
+
+function mettreAJourListeJoueursUI() {
+    const container = document.getElementById('players-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    listeJoueursSolo.forEach((j, idx) => {
+        const div = document.createElement('div');
+        div.className = 'player-card';
+        if (idx === indexJoueurActuel) {
+            div.classList.add('active-turn');
+        }
+        let nomAffiche = j.type === 'HUMAIN' ? j.nom : j.botData.nom;
+        div.innerHTML = `<b>${nomAffiche}</b>`;
+        container.appendChild(div);
+    });
+}
