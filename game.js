@@ -519,12 +519,11 @@ function recevoirActionReseau(donnees) {
             afficherDefausse();
         }
         
-        // Mise à jour des scores
-        let mesPenalites = 0; // Celui qui pose en 1er a 0 pt
-        scoreAdversaire += donnees.contenu.penalites;
+        let penAdversaireQuiAPerdu = donnees.contenu.penalites;
+        scoreAdversaire += penAdversaireQuiAPerdu;
 
-        // Mise à jour visuelle du tableau
-        ajouterLigneScoreTableau(mancheActuelle, mesPenalites, donnees.contenu.penalites);
+        // Celui qui reçoit le message a gagné la manche (0 pts pour lui, pénalités pour l'autre)
+        ajouterLigneScoreTableau(mancheActuelle, 0, penAdversaireQuiAPerdu);
 
         alert(`Fin de la manche ${mancheActuelle} !\nScores cumulés -> Vous: ${scoreJoueur} pts | Adversaire: ${scoreAdversaire} pts`);
         
@@ -537,20 +536,18 @@ function recevoirActionReseau(donnees) {
 }
 
 // Fonction d'affichage dynamique du tableau des scores
-function ajouterLigneScoreTableau(manche, penJoueur, penAdv) {
+function ajouterLigneScoreTableau(manche, penVous, penAdversaire) {
     const tbody = document.getElementById('lignes-scores');
     if (!tbody) return;
 
-    // Ajoute la ligne de la manche qui vient de se terminer
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td>Manche ${manche}</td>
-        <td>${penJoueur} pts</td>
-        <td>${penAdv} pts</td>
+        <td>${penVous} pts</td>
+        <td>${penAdversaire} pts</td>
     `;
     tbody.appendChild(tr);
 
-    // Met à jour les totaux en bas du tableau
     document.getElementById('total-joueur').innerText = `${scoreJoueur} pts`;
     document.getElementById('total-adversaire').innerText = `${scoreAdversaire} pts`;
 }
