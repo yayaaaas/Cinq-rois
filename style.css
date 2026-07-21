@@ -147,3 +147,28 @@ S
     margin: 20px auto;
     max-width: 800px;
 }
+
+#tableau-scores {
+    background-color: #34495e;
+    padding: 15px;
+    border-radius: 8px;
+    max-width: 400px;
+    margin: 10px auto;
+    border: 1px solid #7f8c8d;
+}
+
+#tableau-scores table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#tableau-scores th, #tableau-scores td {
+    padding: 8px;
+    border-bottom: 1px solid #7f8c8d;
+    text-align: center;
+}
+
+#tableau-scores tfoot {
+    font-weight: bold;
+    background-color: rgba(0, 0, 0, 0.2);
+}
