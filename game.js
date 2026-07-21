@@ -347,6 +347,10 @@ function recevoirActionReseau(donnees) {
     else if (donnees.type === 'POSE') {
         alert("L'autre joueur a posé toute sa main ! C'est le dernier tour de la manche.");
     }
+    else if (donnees.type === 'POSE_VICTOIRE') {
+        alert("L'autre joueur a posé toute sa main et a gagné la manche ! ❌");
+        document.getElementById('status-message').innerText = "Défaite pour cette manche...";
+    }
 }
 
 // Fonction pour regrouper les cartes sélectionnées dans la zone de pose
