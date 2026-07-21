@@ -373,3 +373,27 @@ function creerNouveauGroupe() {
         alert("Ce groupe n'est ni une Suite valide, ni une Famille valide !");
     }
 }
+
+function afficherGroupesAPoser() {
+    const container = document.getElementById('zones-combinaisons');
+    if (!container) return;
+    container.innerHTML = '';
+
+    groupesAposer.forEach((groupe) => {
+        const divGroupe = document.createElement('div');
+        divGroupe.className = 'groupe-cartes';
+        
+        groupe.forEach(carte => {
+            const cardDiv = document.createElement('div');
+            cardDiv.classList.add('card', carte.couleur);
+            cardDiv.innerHTML = `
+                <div>${carte.valeur}</div>
+                <div style="font-size: 20px;">${obtenirSymbole(carte.couleur)}</div>
+                <div style="text-align: right;">${carte.valeur}</div>
+            `;
+            divGroupe.appendChild(cardDiv);
+        });
+
+        container.appendChild(divGroupe);
+    });
+}
