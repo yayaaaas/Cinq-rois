@@ -529,3 +529,21 @@ function recevoirActionReseau(donnees) {
         }
     }
 }
+
+function mettreAJourTableauScores(penalitesJoueur, penalitesAdversaire) {
+    const tbody = document.getElementById('lignes-scores');
+    if (!tbody) return;
+
+    // Ajouter la ligne de la manche terminée
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>Manche ${mancheActuelle}</td>
+        <td>${penalitesJoueur} pts</td>
+        <td>${penalitesAdversaire} pts</td>
+    `;
+    tbody.appendChild(tr);
+
+    // Mettre à jour les totaux
+    document.getElementById('total-joueur').innerText = `${scoreJoueur} pts`;
+    document.getElementById('total-adversaire').innerText = `${scoreAdversaire} pts`;
+}
