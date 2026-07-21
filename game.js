@@ -425,3 +425,109 @@ function afficherGroupesAPoser() {
         container.appendChild(divGroupe);
     });
 }
+
+// Variable pour savoir si un joueur a posé et qu'on est au dernier tour
+let estDernierTour = false;
+let scoreJoueur = 0;
+let scoreAdversaire = 0;
+
+// CALCUL DES POINTS DE PÉNALITÉ
+function calculerPointsMain(main) {
+    let total = 0;
+    main.forEach(carte => {
+        if (carte.type === 'joker') {
+            total += 50; // Joker = 50 pts
+        } else if (estUnJokerOuAtout(carte)) {
+            total += 20; // Atout de la manche = 20 pts
+        } else if (carte.valeur === 'V') {
+            total += 11;
+        } else if (carte.valeur === 'D') {
+            total += 12;
+        } else if (carte.valeur === 'R') {
+            total += 13;
+        } else {
+            total += parseInt(carte.valeur); // Valeur numérique (3 à 10)
+        }
+    });
+    return total;
+}
+
+// MISE À JOUR DE LA POSE (Valider la pose déclenche le dernier tour chez l'adversaire)
+function validerEtPoserMain() {
+    if (!monTour) {
+        alert("Ce n'est pas votre tour !");
+        return;
+    }
+    if (!aPioche) {
+        alert("Vous devez piocher avant de poser !");
+        return;
+    }
+
+    if (maMain.length > 1) {
+        alert(`Il vous reste ${maMain.length} carte(s) en main. Intégrez-les dans vos groupes !`);
+        return;
+    }
+
+    if (groupesAposer.length === 0) {
+        alert("Vous n'avez préparé aucune combinaison.");
+        return;
+    }
+
+    alert("Vous avez posé votre main ! Défaussez votre dernière carte pour lancer le DERNIER TOUR de votre adversaire.");
+    
+    // Marquer qu'on a posé
+    aPoseMaMain = true;
+}
+
+// DÉFAUSSER ET S'ADAPTER AU DERNIER TOUR
+function actionDefausserBouton() {
+    if (!monTour) {
+        alert("Ce n'est pas votre tour !");
+        return;
+    }
+    if (!aPioche) {
+        alert("Vous devez piocher d'abord !");
+        return;
+    }
+    if (cartesSelectionnees.length !== 1) {
+        alert("Sélectionnez 1 carte à défausser.");
+        return;
+    }
+
+    let indexCarte = cartesSelectionnees[0];
+    let carteDefaussee = maMain.splice(indexCarte, 1)[0];
+    defausse.push(carteDefaussee);
+
+    cartesSelectionnees = [];
+    aPioche = false;
+    monTour = false;
+
+    afficherMain();
+    afficherDefausse();
+    mettreAJourStatutTour();
+
+    // SI C'ÉTAIT NOTRE DERNIER TOUR (l'adversaire avait déjà posé)
+    if (estDernierTour) {
+        let mesPenalites = calculerPointsMain(maMain);
+        scoreJoueur += mesPenalites;
+        
+        alert(`Fin de la manche ! Vous écopez de ${mesPenalites} points de pénalité.`);
+        
+        envoyerActionReseau('FIN_MANCHE_SCORE', { 
+            penalites: mesPenalites,
+            mainRestante: maMain 
+        });
+        return;
+    }
+
+    // SI ON VIENT DE POSER ET QU'ON DÉFAUSSE POUR FINIR NOTRE TOUR
+    if (typeof aPoseMaMain !== 'undefined' && aPoseMaMain) {
+        envoyerActionReseau('PREMIERE_POSE', { 
+            groupes: groupesAposer,
+            carteDefaussee: carteDefaussee 
+        });
+        aPoseMaMain = false;
+    } else {
+        envoyerActionReseau('ACTION_DEFAUSSER', { carte: carteDefaussee });
+    }
+}
