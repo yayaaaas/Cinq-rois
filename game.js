@@ -471,9 +471,8 @@ function recevoirActionReseau(donnees) {
         maMain = donnees.contenu.mainJoueur2;
         defausse = donnees.contenu.defausse;
         mancheActuelle = donnees.contenu.mancheActuelle;
-        
-        monTour = false; // Le Joueur 2 attend TOUJOURS que l'hôte joue
-        aPioche = false; // Réinitialisation de l'état de pioche
+        monTour = false;
+        aPioche = false;
         estDernierTour = false;
         aPoseMaMain = false;
         
@@ -517,11 +516,16 @@ function recevoirActionReseau(donnees) {
             defausse.push(donnees.contenu.carteDefaussee);
             afficherDefausse();
         }
-        scoreAdversaire += donnees.contenu.penalites;
         
+        // Mise à jour des scores
+        let mesPenalites = 0; // Celui qui pose en 1er a 0 pt
+        scoreAdversaire += donnees.contenu.penalites;
+
+        // Mise à jour visuelle du tableau
+        ajouterLigneScoreTableau(mancheActuelle, mesPenalites, donnees.contenu.penalites);
+
         alert(`Fin de la manche ${mancheActuelle} !\nScores cumulés -> Vous: ${scoreJoueur} pts | Adversaire: ${scoreAdversaire} pts`);
         
-        // Si on est l'hôte, c'est nous qui déclenchons la manche suivante pour tout le monde
         if (estHote) {
             setTimeout(() => {
                 passerMancheSuivante();
@@ -530,20 +534,21 @@ function recevoirActionReseau(donnees) {
     }
 }
 
-function mettreAJourTableauScores(penalitesJoueur, penalitesAdversaire) {
+// Fonction d'affichage dynamique du tableau des scores
+function ajouterLigneScoreTableau(manche, penJoueur, penAdv) {
     const tbody = document.getElementById('lignes-scores');
     if (!tbody) return;
 
-    // Ajouter la ligne de la manche terminée
+    // Ajoute la ligne de la manche qui vient de se terminer
     const tr = document.createElement('tr');
     tr.innerHTML = `
-        <td>Manche ${mancheActuelle}</td>
-        <td>${penalitesJoueur} pts</td>
-        <td>${penalitesAdversaire} pts</td>
+        <td>Manche ${manche}</td>
+        <td>${penJoueur} pts</td>
+        <td>${penAdv} pts</td>
     `;
     tbody.appendChild(tr);
 
-    // Mettre à jour les totaux
+    // Met à jour les totaux en bas du tableau
     document.getElementById('total-joueur').innerText = `${scoreJoueur} pts`;
     document.getElementById('total-adversaire').innerText = `${scoreAdversaire} pts`;
 }
