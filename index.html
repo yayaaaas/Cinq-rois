@@ -2,14 +2,13 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cinq Rois</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jeu du Cinq Rois 👑</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
 
-    <!-- MENU PRINCIPAL (Affiché au début) -->
     <div id="main-menu">
         <h1>Jeu du Cinq Rois 👑</h1>
         
@@ -24,7 +23,6 @@
             <button class="btn-menu" onclick="afficherMenuMulti()">🌐 Multijoueur (2 à 7 Joueurs)</button>
         </div>
 
-        <!-- Sous-menu Multijoueur (caché au début) -->
         <div id="multi-panel" style="display: none;" class="menu-box">
             <h4>Multijoueur</h4>
             <button id="btn-create" onclick="creerPartie()">Créer une partie</button>
@@ -35,66 +33,86 @@
         </div>
     </div>
 
-    <!-- ZONE DE JEU (Cachée au début) -->
     <div id="game-zone" style="display: none;">
         
-        <!-- Barre supérieure : Statut et Liste des Joueurs -->
-        <div id="top-bar">
-            <div id="status-message">Préparation de la partie...</div>
-            <div id="players-list-container">
-                <h3>Joueurs à la table</h3>
+        <div id="mobile-nav">
+            <button class="btn-nav" onclick="ouvrirModal('modal-scores')">📊 Scores</button>
+            <button class="btn-nav" onclick="ouvrirModal('modal-joueurs')">👥 Joueurs</button>
+        </div>
+
+        <div id="status-message">[Manche 1/11] C'est votre tour</div>
+
+        <div id="game-container">
+            
+            <div id="modal-scores" class="game-panel modal-panel">
+                <div class="panel-header">
+                    <h2>Tableau des Scores</h2>
+                    <button class="btn-close-modal" onclick="fermerModal('modal-scores')">✖</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr id="score-header">
+                            <th>Manche</th>
+                            <th>Vous</th>
+                            <th>Adversaire</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lignes-scores"></tbody>
+                    <tfoot>
+                        <tr id="score-footer">
+                            <th>TOTAL</th>
+                            <th id="total-joueur">0</th>
+                            <th id="total-adversaire">0</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div id="central-board" class="game-panel">
+                <h3>Tapis de Jeu</h3>
+                <div id="table">
+                    <div id="deck-pile" class="card-slot" onclick="actionPiocher()">
+                        <span>Pioche</span>
+                    </div>
+                    <div id="discard-pile" class="card-slot" onclick="actionPiocherDefausse()">
+                        <span>Défausse vide</span>
+                    </div>
+                </div>
+
+                <div id="tableau-adversaire" style="display: none;">
+                    <h3>Combinaisons Adversaire</h3>
+                    <div id="zones-combinaisons-adversaire"></div>
+                </div>
+            </div>
+
+            <div id="modal-joueurs" class="game-panel modal-panel">
+                <div class="panel-header">
+                    <h3>Joueurs à la table</h3>
+                    <button class="btn-close-modal" onclick="fermerModal('modal-joueurs')">✖</button>
+                </div>
                 <div id="players-list"></div>
             </div>
+
+            <div id="player-zone" class="game-panel">
+                <div id="tableau-pose">
+                    <h3>Vos Combinaisons (à poser)</h3>
+                    <div id="zones-combinaisons"></div>
+                    <div class="buttons-bar">
+                        <button id="btn-creer-groupe" onclick="creerNouveauGroupe()">+ Combinaison</button>
+                        <button id="btn-valider-pose" onclick="validerEtPoserMain()">Poser tout</button>
+                    </div>
+                </div>
+
+                <h3>Votre Main</h3>
+                <div class="buttons-bar">
+                    <button id="btn-trier" onclick="actionTrierMain()">Trier ma main</button>
+                    <button id="btn-defausser" onclick="actionDefausserBouton()">Défausser la carte</button>
+                </div>
+
+                <div id="player-hand"></div>
+            </div>
+
         </div>
-
-        <!-- Tableau des Scores -->
-        <div id="tableau-scores">
-            <h2>Tableau des Scores</h2>
-            <table>
-                <thead>
-                    <tr id="score-header">
-                        <th>Manche</th>
-                        <th>Vous</th>
-                        <th>Adversaire</th>
-                    </tr>
-                </thead>
-                <tbody id="lignes-scores"></tbody>
-                <tfoot>
-                    <tr id="score-footer">
-                        <th>TOTAL</th>
-                        <th id="total-joueur">0</th>
-                        <th id="total-adversaire">0</th>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-
-        <!-- Tapis de jeu -->
-        <div id="table">
-            <div id="deck-pile" class="card-slot" onclick="actionPiocher()">Pioche</div>
-            <div id="discard-pile" class="card-slot" onclick="actionPiocherDefausse()">Défausse vide</div>
-        </div>
-
-        <!-- Zone de Pose -->
-        <div id="tableau-pose">
-            <h2>Vos Combinaisons (à poser)</h2>
-            <div id="zones-combinaisons"></div>
-            <button id="btn-creer-groupe" onclick="creerNouveauGroupe()">+ Créer un groupe de cartes</button>
-            <button id="btn-valider-pose" onclick="validerEtPoserMain()">Poser toute ma main !</button>
-        </div>
-
-        <!-- Zone de Pose Adversaire -->
-        <div id="tableau-adversaire" style="display: none;">
-            <h2>Combinaisons posées par l'adversaire</h2>
-            <div id="zones-combinaisons-adversaire"></div>
-        </div>
-
-        <!-- Main du Joueur -->
-        <h2>Votre Main</h2>
-        <button id="btn-trier" onclick="actionTrierMain()">Trier ma main</button>
-        <button id="btn-defausser" onclick="actionDefausserBouton()">Défausser la carte sélectionnée</button>
-
-        <div id="player-hand"></div>
     </div>
 
     <script src="game.js"></script>
