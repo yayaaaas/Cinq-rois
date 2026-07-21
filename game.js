@@ -942,3 +942,20 @@ function finirMancheSolo() {
         initialiserPartieSolo();
     }
 }
+
+// ==========================================
+// 7. GESTION DES MODALES MOBILE
+// ==========================================
+function ouvrirModal(idModal) {
+    const modal = document.getElementById(idModal);
+    if (modal) {
+        modal.classList.add('open');
+    }
+}
+
+function fermerModal(idModal) {
+    const modal = document.getElementById(idModal);
+    if (modal) {
+        modal.classList.remove('open');
+    }
+}
