@@ -282,3 +282,29 @@ tfoot {
         padding: 4px 10px;
     }
 }
+
+#btn-home {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+#btn-home:hover {
+    background-color: #c0392b;
+    transform: scale(1.05);
+}
+
+#btn-home:active {
+    transform: scale(0.95);
+}
