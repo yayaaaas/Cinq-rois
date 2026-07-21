@@ -234,14 +234,30 @@ function actionPiocher() {
         alert("Vous avez déjà pioché !");
         return;
     }
-    if (pioche.length > 0) {
-        let cartePiochee = pioche.pop();
-        maMain.push(cartePiochee);
-        aPioche = true;
-        afficherMain();
 
-        envoyerActionReseau('ACTION_PIOCHE_PIOCHE', {});
+    // Si la pioche est vide, on remélange la défausse !
+    if (pioche.length === 0) {
+        if (defausse.length <= 1) {
+            alert("Plus aucune carte disponible dans la pioche ni dans la défausse !");
+            return;
+        }
+        
+        // On garde la dernière carte au sommet de la défausse
+        let carteSommet = defausse.pop();
+        // Le reste de la défausse devient la nouvelle pioche
+        pioche = melanger(defausse);
+        defausse = [carteSommet];
+        
+        afficherDefausse();
+        alert("La pioche était vide : la défausse a été remélangée pour former une nouvelle pioche !");
     }
+
+    let cartePiochee = pioche.pop();
+    maMain.push(cartePiochee);
+    aPioche = true;
+    afficherMain();
+
+    envoyerActionReseau('ACTION_PIOCHE_PIOCHE', {});
 }
 
 function actionPiocherDefausse() {
