@@ -50,6 +50,29 @@
         <div id="player-hand"></div>
     </div>
 
+    <div id="tableau-scores">
+        <h2>Tableau des Scores</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Manche</th>
+                    <th>Vous</th>
+                    <th>Adversaire</th>
+                </tr>
+            </thead>
+            <tbody id="lignes-scores">
+                <!-- Rempli dynamiquement -->
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th>TOTAL</th>
+                    <th id="total-joueur">0</th>
+                    <th id="total-adversaire">0</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
     <script src="game.js"></script>
     <script src="network.js"></script>
 </body>
