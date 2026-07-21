@@ -432,6 +432,8 @@ function initialiserPartieReseau() {
     defausse = [pioche.pop()];
     aPoseMaMain = false;
     estDernierTour = false;
+    aPioche = false; // Réinitialisation de l'état de pioche
+    monTour = true; // L'hôte commence TOUJOURS la nouvelle manche !
     groupesAposer = [];
     cartesSelectionnees = [];
     
@@ -462,7 +464,9 @@ function recevoirActionReseau(donnees) {
         maMain = donnees.contenu.mainJoueur2;
         defausse = donnees.contenu.defausse;
         mancheActuelle = donnees.contenu.mancheActuelle;
-        monTour = false;
+        
+        monTour = false; // Le Joueur 2 attend TOUJOURS que l'hôte joue
+        aPioche = false; // Réinitialisation de l'état de pioche
         estDernierTour = false;
         aPoseMaMain = false;
         
