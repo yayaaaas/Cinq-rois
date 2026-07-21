@@ -3,34 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cinq Rois - Multijoueur</title>
+    <title>Cinq Rois</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
 
-    <div id="connection-panel">
-        <h2>Multijoueur</h2>
-        <div id="host-zone">
+    <!-- MENU PRINCIPAL (Affiché au début) -->
+    <div id="main-menu">
+        <h1>Jeu du Cinq Rois 👑</h1>
+        
+        <div class="menu-box">
+            <label for="player-name"><b>Votre Pseudo :</b></label><br>
+            <input type="text" id="player-name" placeholder="Entrez votre nom" value="Joueur 1">
+        </div>
+
+        <div class="menu-box">
+            <h3>Choisir un mode de jeu</h3>
+            <button class="btn-menu" onclick="lancerModeSolo()">👤 Jouer en Solo (contre 3 Bots)</button>
+            <button class="btn-menu" onclick="afficherMenuMulti()">🌐 Multijoueur (2 à 7 Joueurs)</button>
+        </div>
+
+        <!-- Sous-menu Multijoueur (caché au début) -->
+        <div id="multi-panel" style="display: none;" class="menu-box">
+            <h4>Multijoueur</h4>
             <button id="btn-create" onclick="creerPartie()">Créer une partie</button>
             <p id="my-id-display"></p>
-        </div>
-        <hr>
-        <div id="join-zone">
-            <input type="text" id="join-id-input" placeholder="Entrez le code de la partie">
+            <hr>
+            <input type="text" id="join-id-input" placeholder="Code de la partie">
             <button id="btn-join" onclick="rejoindrePartie()">Rejoindre</button>
         </div>
-        <p id="status-message">Statut : Non connecté</p>
     </div>
 
-    <h1>Jeu du Cinq Rois</h1>
-    
-    <div id="game-zone">
+    <!-- ZONE DE JEU (Cachée au début) -->
+    <div id="game-zone" style="display: none;">
+        
+        <!-- Barre supérieure : Statut et Liste des Joueurs -->
+        <div id="top-bar">
+            <div id="status-message">Préparation de la partie...</div>
+            <div id="players-list-container">
+                <h3>Joueurs à la table</h3>
+                <div id="players-list"></div>
+            </div>
+        </div>
+
+        <!-- Tableau des Scores -->
+        <div id="tableau-scores">
+            <h2>Tableau des Scores</h2>
+            <table>
+                <thead>
+                    <tr id="score-header">
+                        <th>Manche</th>
+                        <th>Vous</th>
+                        <th>Adversaire</th>
+                    </tr>
+                </thead>
+                <tbody id="lignes-scores"></tbody>
+                <tfoot>
+                    <tr id="score-footer">
+                        <th>TOTAL</th>
+                        <th id="total-joueur">0</th>
+                        <th id="total-adversaire">0</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Tapis de jeu -->
         <div id="table">
             <div id="deck-pile" class="card-slot" onclick="actionPiocher()">Pioche</div>
             <div id="discard-pile" class="card-slot" onclick="actionPiocherDefausse()">Défausse vide</div>
         </div>
 
+        <!-- Zone de Pose -->
         <div id="tableau-pose">
             <h2>Vos Combinaisons (à poser)</h2>
             <div id="zones-combinaisons"></div>
@@ -38,39 +83,18 @@
             <button id="btn-valider-pose" onclick="validerEtPoserMain()">Poser toute ma main !</button>
         </div>
 
+        <!-- Zone de Pose Adversaire -->
         <div id="tableau-adversaire" style="display: none;">
             <h2>Combinaisons posées par l'adversaire</h2>
             <div id="zones-combinaisons-adversaire"></div>
         </div>
 
+        <!-- Main du Joueur -->
         <h2>Votre Main</h2>
         <button id="btn-trier" onclick="actionTrierMain()">Trier ma main</button>
         <button id="btn-defausser" onclick="actionDefausserBouton()">Défausser la carte sélectionnée</button>
 
         <div id="player-hand"></div>
-    </div>
-
-    <div id="tableau-scores">
-        <h2>Tableau des Scores</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Manche</th>
-                    <th>Vous</th>
-                    <th>Adversaire</th>
-                </tr>
-            </thead>
-            <tbody id="lignes-scores">
-                <!-- Rempli dynamiquement -->
-            </tbody>
-            <tfoot>
-                <tr>
-                    <th>TOTAL</th>
-                    <th id="total-joueur">0</th>
-                    <th id="total-adversaire">0</th>
-                </tr>
-            </tfoot>
-        </table>
     </div>
 
     <script src="game.js"></script>
