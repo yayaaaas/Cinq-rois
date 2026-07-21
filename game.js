@@ -433,6 +433,7 @@ function actionDefausserBouton() {
         return;
     }
 
+    // Sécurité : Si la main est déjà vide parce qu'on a tout posé
     if (maMain.length === 0 && aPoseMaMain) {
         if (modeJeu === "SOLO") {
             passerTourSuivantSolo();
@@ -445,8 +446,23 @@ function actionDefausserBouton() {
         return;
     }
 
+    // --- CORRECTION DU BLOCAGE ---
+    // Si des groupes sont préparés ET qu'il ne reste qu'1 seule carte en main, 
+    // on valide automatiquement l'état de pose !
+    let totalCartesGroupes = 0;
+    groupesAposer.forEach(g => totalCartesGroupes += g.length);
+
+    if (groupesAposer.length > 0 && maMain.length === 1) {
+        // Vérifier que tous les groupes préparés sont valides
+        let tousValides = groupesAposer.every(g => validerCombinaison(g));
+        if (tousValides) {
+            aPoseMaMain = true; // On autorise la pose !
+        }
+    }
+
+    // VÉRIFICATION RÈGLE : Interdiction de défausser si pioché dans la défausse sans poser
     if (piocheDepuisDefausse && !aPoseMaMain && !estDernierTour) {
-        alert("⚠️ RÈGLE : Vous avez pioché dans la défausse, vous êtes OBLIGÉ de poser toute votre main ce tour-ci !");
+        alert("⚠️ RÈGLE : Vous avez pioché dans la défausse, vous êtes OBLIGÉ de poser toute votre main ce tour-ci ! Cliquez d'abord sur 'Poser toute ma main !' ou vérifiez vos combinaisons.");
         return;
     }
 
@@ -455,24 +471,30 @@ function actionDefausserBouton() {
         return;
     }
 
+    // Retirer la carte sélectionnée de la main et l'ajouter à la défausse
     let indexCarte = cartesSelectionnees[0];
     let carteDefaussee = maMain.splice(indexCarte, 1)[0];
     defausse.push(carteDefaussee);
 
+    // Réinitialisation des états du tour
     cartesSelectionnees = [];
     aPioche = false;
     monTour = false;
     piocheDepuisDefausse = false;
 
+    // Actualiser l'affichage
     afficherMain();
     afficherDefausse();
     mettreAJourStatutTour();
 
+    // ==========================================
+    // GESTION DU MODE SOLO (CONTRE LES BOTS)
+    // ==========================================
     if (modeJeu === "SOLO") {
         if (aPoseMaMain) {
             if (!estDernierTour) {
                 estDernierTour = true;
-                indexJoueurQuiAPose = 0; 
+                indexJoueurQuiAPose = 0; // 0 = Vous
                 alert("Vous avez posé votre main ! Les 3 bots jouent leur DERNIER TOUR.");
             }
             aPoseMaMain = false;
@@ -481,6 +503,9 @@ function actionDefausserBouton() {
         return;
     }
 
+    // ==========================================
+    // GESTION DU MODE MULTIJOUEUR (RÉSEAU)
+    // ==========================================
     if (estDernierTour) {
         let mesPenalites = calculerPointsMain(maMain);
         scoreJoueur += mesPenalites;
