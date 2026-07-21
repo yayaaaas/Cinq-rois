@@ -2,6 +2,10 @@ var peer = null;
 var conn = null;
 
 function creerPartie() {
+    // Récupération du pseudo saisi
+    const nameInput = document.getElementById('player-name').value.trim();
+    if (nameInput !== "") monPseudo = nameInput;
+
     const codePartie = "5ROIS-" + Math.floor(1000 + Math.random() * 9000);
     peer = new Peer(codePartie);
 
@@ -11,7 +15,7 @@ function creerPartie() {
         estHote = true;
         monTour = true;
         
-        // On affiche l'interface de jeu
+        // Affiche l'interface de jeu pour L'HÔTE immédiatement
         demarrerJeuUI();
     });
 
@@ -22,6 +26,10 @@ function creerPartie() {
 }
 
 function rejoindrePartie() {
+    // Récupération du pseudo saisi
+    const nameInput = document.getElementById('player-name').value.trim();
+    if (nameInput !== "") monPseudo = nameInput;
+
     const codeEntre = document.getElementById('join-id-input').value.trim();
     if (!codeEntre) {
         alert("Entrez un code valide !");
@@ -36,7 +44,7 @@ function rejoindrePartie() {
         estHote = false;
         monTour = false;
         
-        // On affiche l'interface de jeu
+        // Affiche l'interface de jeu pour le Joueur 2
         demarrerJeuUI();
     });
 }
@@ -45,7 +53,6 @@ function initialiserConnexion() {
     conn.on('open', () => {
         document.getElementById('status-message').innerText = "Connecté ! Synchronisation...";
 
-        // Le joueur 2 confirme qu'il est prêt à recevoir les cartes
         if (!estHote) {
             setTimeout(() => {
                 envoyerActionReseau('JOUEUR_PRET', {});
