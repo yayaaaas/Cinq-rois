@@ -321,6 +321,7 @@ function recevoirActionReseau(donnees) {
         maMain = donnees.contenu.mainJoueur2;
         defausse = donnees.contenu.defausse;
         monTour = false;
+        estDernierTour = false;
         
         cartesSelectionnees = [];
         afficherMain();
@@ -340,11 +341,23 @@ function recevoirActionReseau(donnees) {
         monTour = true;
         mettreAJourStatutTour();
     }
-    // RÉCEPTION DE LA POSE ADVERSE
-    else if (donnees.type === 'POSE_VICTOIRE') {
+    // L'ADVERSAIRE A POSÉ : DÉBUT DU DERNIER TOUR
+    else if (donnees.type === 'PREMIERE_POSE') {
+        defausse.push(donnees.contenu.carteDefaussee);
+        afficherDefausse();
         afficherPoseAdversaire(donnees.contenu.groupes);
-        alert("L'autre joueur a posé toute sa main et a gagné la manche ! ❌");
-        document.getElementById('status-message').innerText = "Défaite pour cette manche...";
+        
+        estDernierTour = true;
+        monTour = true;
+        
+        alert("⚠️ L'adversaire a posé toute sa main ! C'est votre DERNIER TOUR pour poser vos combinaisons !");
+        document.getElementById('status-message').innerText = "⚠️ DERNIER TOUR ! Piochez, posez vos groupes et défaussez.";
+    }
+    // RÉCEPTION DES SCORES DE FIN DE MANCHE
+    else if (donnees.type === 'FIN_MANCHE_SCORE') {
+        scoreAdversaire += donnees.contenu.penalites;
+        alert(`Manche terminée ! L'adversaire prend ${donnees.contenu.penalites} pts de pénalité.`);
+        console.log(`Scores actuels -> Vous: ${scoreJoueur} pts | Adversaire: ${scoreAdversaire} pts`);
     }
 }
 
