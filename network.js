@@ -2,7 +2,6 @@ var peer = null;
 var conn = null;
 
 function creerPartie() {
-    // Récupération du pseudo saisi
     const nameInput = document.getElementById('player-name').value.trim();
     if (nameInput !== "") monPseudo = nameInput;
 
@@ -10,18 +9,23 @@ function creerPartie() {
     peer = new Peer(codePartie);
 
     peer.on('open', (id) => {
-        document.getElementById('my-id-display').innerHTML = `Partie créée ! Code : <b>${id}</b>`;
-        document.getElementById('status-message').innerText = "En attente du Joueur 2...";
+        // Affiche le code dans le panneau de connexion
+        document.getElementById('my-id-display').innerHTML = `Partie créée ! Code : <b style="font-size: 20px; color: #f1c40f;">${id}</b>`;
+        document.getElementById('status-message').innerText = "Transmettez ce code au Joueur 2 et attendez sa connexion...";
+        
         estHote = true;
         monTour = true;
         
-        // Affiche l'interface de jeu pour L'HÔTE immédiatement
-        demarrerJeuUI();
+        // On NE MASQUE PAS le menu tout de suite pour que l'hôte puisse lire le code !
     });
 
     peer.on('connection', (connection) => {
         conn = connection;
         initialiserConnexion();
+    });
+
+    peer.on('error', (err) => {
+        alert("Erreur de connexion PeerJS : " + err.type);
     });
 }
 
