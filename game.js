@@ -511,8 +511,14 @@ function recevoirActionReseau(donnees) {
             afficherDefausse();
         }
         scoreAdversaire += donnees.contenu.penalites;
+        
         alert(`Fin de la manche ${mancheActuelle} !\nScores cumulés -> Vous: ${scoreJoueur} pts | Adversaire: ${scoreAdversaire} pts`);
         
-        passerMancheSuivante();
+        // Si on est l'hôte, c'est nous qui déclenchons la manche suivante pour tout le monde
+        if (estHote) {
+            setTimeout(() => {
+                passerMancheSuivante();
+            }, 1000);
+        }
     }
 }
