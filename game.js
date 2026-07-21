@@ -344,4 +344,7 @@ function recevoirActionReseau(donnees) {
         monTour = true; // C'est maintenant notre tour !
         mettreAJourStatutTour();
     }
+    else if (donnees.type === 'POSE') {
+        alert("L'autre joueur a posé toute sa main ! C'est le dernier tour de la manche.");
+    }
 }
