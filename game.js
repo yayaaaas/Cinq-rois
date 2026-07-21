@@ -10,9 +10,15 @@ let maMain = [];
 let mancheActuelle = 1; 
 let aPioche = false;
 let monTour = false; // Gère le tour par tour
+let estHote = false;
 
 let cartesSelectionnees = [];
 let groupesAposer = [];
+
+let estDernierTour = false;
+let aPoseMaMain = false; // Déclaration globale corrigée
+let scoreJoueur = 0;
+let scoreAdversaire = 0;
 
 // ==========================================
 // 2. GÉNÉRATION DU DECK ET TRI
@@ -155,8 +161,60 @@ function mettreAJourStatutTour() {
     }
 }
 
+function afficherGroupesAPoser() {
+    const container = document.getElementById('zones-combinaisons');
+    if (!container) return;
+    container.innerHTML = '';
+
+    groupesAposer.forEach((groupe) => {
+        const divGroupe = document.createElement('div');
+        divGroupe.className = 'groupe-cartes';
+        
+        groupe.forEach(carte => {
+            const cardDiv = document.createElement('div');
+            cardDiv.classList.add('card', carte.couleur);
+            cardDiv.innerHTML = `
+                <div>${carte.valeur}</div>
+                <div style="font-size: 20px;">${obtenirSymbole(carte.couleur)}</div>
+                <div style="text-align: right;">${carte.valeur}</div>
+            `;
+            divGroupe.appendChild(cardDiv);
+        });
+
+        container.appendChild(divGroupe);
+    });
+}
+
+function afficherPoseAdversaire(groupesAdverses) {
+    const zoneAdversaire = document.getElementById('tableau-adversaire');
+    const container = document.getElementById('zones-combinaisons-adversaire');
+    
+    if (!zoneAdversaire || !container) return;
+    
+    zoneAdversaire.style.display = 'block';
+    container.innerHTML = '';
+
+    groupesAdverses.forEach((groupe) => {
+        const divGroupe = document.createElement('div');
+        divGroupe.className = 'groupe-cartes';
+        
+        groupe.forEach(carte => {
+            const cardDiv = document.createElement('div');
+            cardDiv.classList.add('card', carte.couleur);
+            cardDiv.innerHTML = `
+                <div>${carte.valeur}</div>
+                <div style="font-size: 20px;">${obtenirSymbole(carte.couleur)}</div>
+                <div style="text-align: right;">${carte.valeur}</div>
+            `;
+            divGroupe.appendChild(cardDiv);
+        });
+
+        container.appendChild(divGroupe);
+    });
+}
+
 // ==========================================
-// 4. ACTIONS DU JOUEUR (SYNCHRONISÉES)
+// 4. ACTIONS DU JOUEUR
 // ==========================================
 function verifierClicCarte(index) {
     if (cartesSelectionnees.includes(index)) {
@@ -182,7 +240,6 @@ function actionPiocher() {
         aPioche = true;
         afficherMain();
 
-        // On informe l'autre joueur que la pioche a diminué
         envoyerActionReseau('ACTION_PIOCHE_PIOCHE', {});
     }
 }
@@ -208,38 +265,7 @@ function actionPiocherDefausse() {
     afficherMain();
     afficherDefausse();
 
-    // On informe l'autre joueur de la pioche dans la défausse
     envoyerActionReseau('ACTION_PIOCHE_DEFAUSSE', {});
-}
-
-function actionDefausserBouton() {
-    if (!monTour) {
-        alert("Ce n'est pas votre tour !");
-        return;
-    }
-    if (!aPioche) {
-        alert("Vous devez piocher d'abord !");
-        return;
-    }
-    if (cartesSelectionnees.length !== 1) {
-        alert("Sélectionnez EXACTEMENT une carte à défausser.");
-        return;
-    }
-
-    let indexCarte = cartesSelectionnees[0];
-    let carteDefaussee = maMain.splice(indexCarte, 1)[0];
-    defausse.push(carteDefaussee);
-
-    cartesSelectionnees = [];
-    aPioche = false;
-    monTour = false; // Fin de tour !
-
-    afficherMain();
-    afficherDefausse();
-    mettreAJourStatutTour();
-
-    // Synchronisation : on envoie la carte défaussée et on donne la main à l'adversaire
-    envoyerActionReseau('ACTION_DEFAUSSER', { carte: carteDefaussee });
 }
 
 function actionTrierMain() {
@@ -253,14 +279,34 @@ function actionTrierMain() {
     afficherMain();
 }
 
+function creerNouveauGroupe() {
+    if (cartesSelectionnees.length < 3) {
+        alert("Une combinaison doit contenir au moins 3 cartes !");
+        return;
+    }
+
+    let nouveauGroupe = cartesSelectionnees.map(i => maMain[i]);
+    
+    if (estUneFamille(nouveauGroupe) || estUneSuite(nouveauGroupe)) {
+        groupesAposer.push(nouveauGroupe);
+        
+        maMain = maMain.filter((_, idx) => !cartesSelectionnees.includes(idx));
+        cartesSelectionnees = [];
+        
+        afficherMain();
+        afficherGroupesAPoser();
+    } else {
+        alert("Ce groupe n'est ni une Suite valide, ni une Famille valide !");
+    }
+}
+
 function validerEtPoserMain() {
     if (!monTour) {
         alert("Ce n'est pas votre tour !");
         return;
     }
-
     if (!aPioche) {
-        alert("Vous devez piocher une carte avant de poser votre main !");
+        alert("Vous devez piocher avant de poser !");
         return;
     }
 
@@ -274,13 +320,83 @@ function validerEtPoserMain() {
         return;
     }
 
-    alert("🎉 VICTOIRE ! Vous avez posé toute votre main !");
-    document.getElementById('status-message').innerText = "🏆 Vous avez remporté la manche !";
+    alert("Vous avez posé votre main ! Cliquez maintenant sur votre dernière carte et défaussez-la pour valider votre tour.");
+    aPoseMaMain = true;
+}
 
-    // Transmission RÉSEAU : On envoie tous les groupes de cartes au second joueur
-    if (typeof envoyerActionReseau === 'function') {
-        envoyerActionReseau('POSE_VICTOIRE', { groupes: groupesAposer });
+function actionDefausserBouton() {
+    if (!monTour) {
+        alert("Ce n'est pas votre tour !");
+        return;
     }
+    if (!aPioche) {
+        alert("Vous devez piocher d'abord !");
+        return;
+    }
+    if (cartesSelectionnees.length !== 1) {
+        alert("Sélectionnez 1 carte à défausser.");
+        return;
+    }
+
+    let indexCarte = cartesSelectionnees[0];
+    let carteDefaussee = maMain.splice(indexCarte, 1)[0];
+    defausse.push(carteDefaussee);
+
+    cartesSelectionnees = [];
+    aPioche = false;
+    monTour = false;
+
+    afficherMain();
+    afficherDefausse();
+    mettreAJourStatutTour();
+
+    // 1. Si c'était notre DERNIER TOUR (l'autre avait déjà posé)
+    if (estDernierTour) {
+        let mesPenalites = calculerPointsMain(maMain);
+        scoreJoueur += mesPenalites;
+        
+        alert(`Fin de la manche ! Vous écopez de ${mesPenalites} points de pénalité.`);
+        
+        envoyerActionReseau('FIN_MANCHE_SCORE', { 
+            penalites: mesPenalites,
+            carteDefaussee: carteDefaussee
+        });
+        return;
+    }
+
+    // 2. Si ON VIENT DE POSER en premier
+    if (aPoseMaMain) {
+        alert("Main transmise ! L'adversaire joue son dernier tour.");
+        envoyerActionReseau('PREMIERE_POSE', { 
+            groupes: groupesAposer,
+            carteDefaussee: carteDefaussee 
+        });
+        aPoseMaMain = false;
+    } 
+    // 3. Tour normal de défausse
+    else {
+        envoyerActionReseau('ACTION_DEFAUSSER', { carte: carteDefaussee });
+    }
+}
+
+function calculerPointsMain(main) {
+    let total = 0;
+    main.forEach(carte => {
+        if (carte.type === 'joker') {
+            total += 50;
+        } else if (estUnJokerOuAtout(carte)) {
+            total += 20;
+        } else if (carte.valeur === 'V') {
+            total += 11;
+        } else if (carte.valeur === 'D') {
+            total += 12;
+        } else if (carte.valeur === 'R') {
+            total += 13;
+        } else {
+            total += parseInt(carte.valeur);
+        }
+    });
+    return total;
 }
 
 // ==========================================
@@ -322,10 +438,13 @@ function recevoirActionReseau(donnees) {
         defausse = donnees.contenu.defausse;
         monTour = false;
         estDernierTour = false;
+        aPoseMaMain = false;
         
         cartesSelectionnees = [];
+        groupesAposer = [];
         afficherMain();
         afficherDefausse();
+        afficherGroupesAPoser();
         mettreAJourStatutTour();
     }
     else if (donnees.type === 'ACTION_PIOCHE_PIOCHE') {
@@ -341,7 +460,6 @@ function recevoirActionReseau(donnees) {
         monTour = true;
         mettreAJourStatutTour();
     }
-    // L'ADVERSAIRE A POSÉ : DÉBUT DU DERNIER TOUR
     else if (donnees.type === 'PREMIERE_POSE') {
         defausse.push(donnees.contenu.carteDefaussee);
         afficherDefausse();
@@ -353,194 +471,11 @@ function recevoirActionReseau(donnees) {
         alert("⚠️ L'adversaire a posé toute sa main ! C'est votre DERNIER TOUR pour poser vos combinaisons !");
         document.getElementById('status-message').innerText = "⚠️ DERNIER TOUR ! Piochez, posez vos groupes et défaussez.";
     }
-    // RÉCEPTION DES SCORES DE FIN DE MANCHE
     else if (donnees.type === 'FIN_MANCHE_SCORE') {
+        defausse.push(donnees.contenu.carteDefaussee);
+        afficherDefausse();
         scoreAdversaire += donnees.contenu.penalites;
         alert(`Manche terminée ! L'adversaire prend ${donnees.contenu.penalites} pts de pénalité.`);
-        console.log(`Scores actuels -> Vous: ${scoreJoueur} pts | Adversaire: ${scoreAdversaire} pts`);
-    }
-}
-
-// Fonction pour dessiner les combinaisons de l'adversaire
-function afficherPoseAdversaire(groupesAdverses) {
-    const zoneAdversaire = document.getElementById('tableau-adversaire');
-    const container = document.getElementById('zones-combinaisons-adversaire');
-    
-    if (!zoneAdversaire || !container) return;
-    
-    zoneAdversaire.style.display = 'block'; // Rendre la zone visible
-    container.innerHTML = '';
-
-    groupesAdverses.forEach((groupe) => {
-        const divGroupe = document.createElement('div');
-        divGroupe.className = 'groupe-cartes';
-        
-        groupe.forEach(carte => {
-            const cardDiv = document.createElement('div');
-            cardDiv.classList.add('card', carte.couleur);
-            cardDiv.innerHTML = `
-                <div>${carte.valeur}</div>
-                <div style="font-size: 20px;">${obtenirSymbole(carte.couleur)}</div>
-                <div style="text-align: right;">${carte.valeur}</div>
-            `;
-            divGroupe.appendChild(cardDiv);
-        });
-
-        container.appendChild(divGroupe);
-    });
-}
-
-// Fonction pour regrouper les cartes sélectionnées dans la zone de pose
-function creerNouveauGroupe() {
-    if (cartesSelectionnees.length < 3) {
-        alert("Une combinaison doit contenir au moins 3 cartes !");
-        return;
-    }
-
-    // Récupérer les cartes cliquées
-    let nouveauGroupe = cartesSelectionnees.map(i => maMain[i]);
-    
-    // Vérifier si le groupe est valide
-    if (estUneFamille(nouveauGroupe) || estUneSuite(nouveauGroupe)) {
-        groupesAposer.push(nouveauGroupe);
-        
-        // Retirer ces cartes de la main
-        maMain = maMain.filter((_, idx) => !cartesSelectionnees.includes(idx));
-        cartesSelectionnees = [];
-        
-        afficherMain();
-        afficherGroupesAPoser();
-    } else {
-        alert("Ce groupe n'est ni une Suite valide, ni une Famille valide !");
-    }
-}
-
-function afficherGroupesAPoser() {
-    const container = document.getElementById('zones-combinaisons');
-    if (!container) return;
-    container.innerHTML = '';
-
-    groupesAposer.forEach((groupe) => {
-        const divGroupe = document.createElement('div');
-        divGroupe.className = 'groupe-cartes';
-        
-        groupe.forEach(carte => {
-            const cardDiv = document.createElement('div');
-            cardDiv.classList.add('card', carte.couleur);
-            cardDiv.innerHTML = `
-                <div>${carte.valeur}</div>
-                <div style="font-size: 20px;">${obtenirSymbole(carte.couleur)}</div>
-                <div style="text-align: right;">${carte.valeur}</div>
-            `;
-            divGroupe.appendChild(cardDiv);
-        });
-
-        container.appendChild(divGroupe);
-    });
-}
-
-// Variable pour savoir si un joueur a posé et qu'on est au dernier tour
-let estDernierTour = false;
-let scoreJoueur = 0;
-let scoreAdversaire = 0;
-
-// CALCUL DES POINTS DE PÉNALITÉ
-function calculerPointsMain(main) {
-    let total = 0;
-    main.forEach(carte => {
-        if (carte.type === 'joker') {
-            total += 50; // Joker = 50 pts
-        } else if (estUnJokerOuAtout(carte)) {
-            total += 20; // Atout de la manche = 20 pts
-        } else if (carte.valeur === 'V') {
-            total += 11;
-        } else if (carte.valeur === 'D') {
-            total += 12;
-        } else if (carte.valeur === 'R') {
-            total += 13;
-        } else {
-            total += parseInt(carte.valeur); // Valeur numérique (3 à 10)
-        }
-    });
-    return total;
-}
-
-// MISE À JOUR DE LA POSE (Valider la pose déclenche le dernier tour chez l'adversaire)
-function validerEtPoserMain() {
-    if (!monTour) {
-        alert("Ce n'est pas votre tour !");
-        return;
-    }
-    if (!aPioche) {
-        alert("Vous devez piocher avant de poser !");
-        return;
-    }
-
-    if (maMain.length > 1) {
-        alert(`Il vous reste ${maMain.length} carte(s) en main. Intégrez-les dans vos groupes !`);
-        return;
-    }
-
-    if (groupesAposer.length === 0) {
-        alert("Vous n'avez préparé aucune combinaison.");
-        return;
-    }
-
-    alert("Vous avez posé votre main ! Défaussez votre dernière carte pour lancer le DERNIER TOUR de votre adversaire.");
-    
-    // Marquer qu'on a posé
-    aPoseMaMain = true;
-}
-
-// DÉFAUSSER ET S'ADAPTER AU DERNIER TOUR
-function actionDefausserBouton() {
-    if (!monTour) {
-        alert("Ce n'est pas votre tour !");
-        return;
-    }
-    if (!aPioche) {
-        alert("Vous devez piocher d'abord !");
-        return;
-    }
-    if (cartesSelectionnees.length !== 1) {
-        alert("Sélectionnez 1 carte à défausser.");
-        return;
-    }
-
-    let indexCarte = cartesSelectionnees[0];
-    let carteDefaussee = maMain.splice(indexCarte, 1)[0];
-    defausse.push(carteDefaussee);
-
-    cartesSelectionnees = [];
-    aPioche = false;
-    monTour = false;
-
-    afficherMain();
-    afficherDefausse();
-    mettreAJourStatutTour();
-
-    // SI C'ÉTAIT NOTRE DERNIER TOUR (l'adversaire avait déjà posé)
-    if (estDernierTour) {
-        let mesPenalites = calculerPointsMain(maMain);
-        scoreJoueur += mesPenalites;
-        
-        alert(`Fin de la manche ! Vous écopez de ${mesPenalites} points de pénalité.`);
-        
-        envoyerActionReseau('FIN_MANCHE_SCORE', { 
-            penalites: mesPenalites,
-            mainRestante: maMain 
-        });
-        return;
-    }
-
-    // SI ON VIENT DE POSER ET QU'ON DÉFAUSSE POUR FINIR NOTRE TOUR
-    if (typeof aPoseMaMain !== 'undefined' && aPoseMaMain) {
-        envoyerActionReseau('PREMIERE_POSE', { 
-            groupes: groupesAposer,
-            carteDefaussee: carteDefaussee 
-        });
-        aPoseMaMain = false;
-    } else {
-        envoyerActionReseau('ACTION_DEFAUSSER', { carte: carteDefaussee });
+        document.getElementById('status-message').innerText = `Scores -> Vous: ${scoreJoueur} pts | Adversaire: ${scoreAdversaire} pts`;
     }
 }
