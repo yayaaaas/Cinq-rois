@@ -17,6 +17,8 @@ let groupesAposer = [];
 
 let estDernierTour = false;
 let aPoseMaMain = false; 
+let piocheDepuisDefausse = false; // Règle : piocher défausse obligatoirement suivi d'une pose
+
 let scoreJoueur = 0;
 let scoreAdversaire = 0;
 
@@ -235,16 +237,13 @@ function actionPiocher() {
         return;
     }
 
-    // Si la pioche est vide, on remélange la défausse !
     if (pioche.length === 0) {
         if (defausse.length <= 1) {
             alert("Plus aucune carte disponible dans la pioche ni dans la défausse !");
             return;
         }
         
-        // On garde la dernière carte au sommet de la défausse
         let carteSommet = defausse.pop();
-        // Le reste de la défausse devient la nouvelle pioche
         pioche = melanger(defausse);
         defausse = [carteSommet];
         
@@ -255,6 +254,7 @@ function actionPiocher() {
     let cartePiochee = pioche.pop();
     maMain.push(cartePiochee);
     aPioche = true;
+    piocheDepuisDefausse = false; // Pioche normale
     afficherMain();
 
     envoyerActionReseau('ACTION_PIOCHE_PIOCHE', {});
@@ -273,10 +273,14 @@ function actionPiocherDefausse() {
         alert("La défausse est vide !");
         return;
     }
-    
+
+    let confirmation = confirm("Règle : Vous ne pouvez piocher dans la défausse QUE si vous posez TOUTE votre main ce tour-ci. Voulez-vous continuer ?");
+    if (!confirmation) return;
+
     let cartePrelee = defausse.pop();
     maMain.push(cartePrelee);
     aPioche = true;
+    piocheDepuisDefausse = true; // Marquage de la règle
     
     afficherMain();
     afficherDefausse();
@@ -349,6 +353,13 @@ function actionDefausserBouton() {
         alert("Vous devez piocher d'abord !");
         return;
     }
+
+    // VÉRIFICATION RÈGLE : Interdiction de défausser sans avoir posé si pioché dans la défausse
+    if (piocheDepuisDefausse && !aPoseMaMain && !estDernierTour) {
+        alert("⚠️ RÈGLE : Vous avez pioché dans la défausse, vous êtes OBLIGÉ de poser toute votre main ce tour-ci !");
+        return;
+    }
+
     if (cartesSelectionnees.length !== 1) {
         alert("Sélectionnez 1 carte à défausser.");
         return;
@@ -361,17 +372,17 @@ function actionDefausserBouton() {
     cartesSelectionnees = [];
     aPioche = false;
     monTour = false;
+    piocheDepuisDefausse = false; // Réinitialisation
 
     afficherMain();
     afficherDefausse();
     mettreAJourStatutTour();
 
-    // Si c'était notre DERNIER TOUR (l'adversaire a posé en 1er)
+    // Si c'était notre DERNIER TOUR
     if (estDernierTour) {
         let mesPenalites = calculerPointsMain(maMain);
         scoreJoueur += mesPenalites;
         
-        // Celui qui s'exécute ici est le perdant de la manche (mesPenalites pour lui, 0 pour l'autre)
         ajouterLigneScoreTableau(mancheActuelle, mesPenalites, 0);
 
         alert(`Fin de la manche ${mancheActuelle} ! Vous écopez de ${mesPenalites} points de pénalité.`);
@@ -389,7 +400,7 @@ function actionDefausserBouton() {
         return;
     }
 
-    // 2. Si ON VIENT DE POSER en premier
+    // Si ON VIENT DE POSER en premier
     if (aPoseMaMain) {
         alert("Main transmise ! L'adversaire joue son dernier tour.");
         envoyerActionReseau('PREMIERE_POSE', { 
@@ -398,7 +409,7 @@ function actionDefausserBouton() {
         });
         aPoseMaMain = false;
     } 
-    // 3. Tour normal de défausse
+    // Tour normal de défausse
     else {
         envoyerActionReseau('ACTION_DEFAUSSER', { carte: carteDefaussee });
     }
@@ -457,8 +468,9 @@ function initialiserPartieReseau() {
     defausse = [pioche.pop()];
     aPoseMaMain = false;
     estDernierTour = false;
-    aPioche = false; // Réinitialisation de l'état de pioche
-    monTour = true; // L'hôte commence TOUJOURS la nouvelle manche !
+    piocheDepuisDefausse = false;
+    aPioche = false; 
+    monTour = true; 
     groupesAposer = [];
     cartesSelectionnees = [];
     
@@ -493,6 +505,7 @@ function recevoirActionReseau(donnees) {
         aPioche = false;
         estDernierTour = false;
         aPoseMaMain = false;
+        piocheDepuisDefausse = false;
         
         cartesSelectionnees = [];
         groupesAposer = [];
@@ -538,7 +551,6 @@ function recevoirActionReseau(donnees) {
         let penAdversaireQuiAPerdu = donnees.contenu.penalites;
         scoreAdversaire += penAdversaireQuiAPerdu;
 
-        // Celui qui reçoit le message a gagné la manche (0 pts pour lui, pénalités pour l'autre)
         ajouterLigneScoreTableau(mancheActuelle, 0, penAdversaireQuiAPerdu);
 
         alert(`Fin de la manche ${mancheActuelle} !\nScores cumulés -> Vous: ${scoreJoueur} pts | Adversaire: ${scoreAdversaire} pts`);
@@ -551,7 +563,6 @@ function recevoirActionReseau(donnees) {
     }
 }
 
-// Fonction d'affichage dynamique du tableau des scores
 function ajouterLigneScoreTableau(manche, penVous, penAdversaire) {
     const tbody = document.getElementById('lignes-scores');
     if (!tbody) return;
