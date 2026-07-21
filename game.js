@@ -348,3 +348,28 @@ function recevoirActionReseau(donnees) {
         alert("L'autre joueur a posé toute sa main ! C'est le dernier tour de la manche.");
     }
 }
+
+// Fonction pour regrouper les cartes sélectionnées dans la zone de pose
+function creerNouveauGroupe() {
+    if (cartesSelectionnees.length < 3) {
+        alert("Une combinaison doit contenir au moins 3 cartes !");
+        return;
+    }
+
+    // Récupérer les cartes cliquées
+    let nouveauGroupe = cartesSelectionnees.map(i => maMain[i]);
+    
+    // Vérifier si le groupe est valide
+    if (estUneFamille(nouveauGroupe) || estUneSuite(nouveauGroupe)) {
+        groupesAposer.push(nouveauGroupe);
+        
+        // Retirer ces cartes de la main
+        maMain = maMain.filter((_, idx) => !cartesSelectionnees.includes(idx));
+        cartesSelectionnees = [];
+        
+        afficherMain();
+        afficherGroupesAPoser();
+    } else {
+        alert("Ce groupe n'est ni une Suite valide, ni une Famille valide !");
+    }
+}
