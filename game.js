@@ -350,11 +350,14 @@ function actionDefausserBouton() {
     afficherDefausse();
     mettreAJourStatutTour();
 
-    // 1. Si c'était notre DERNIER TOUR (l'autre avait déjà posé)
+    // Si c'était notre DERNIER TOUR (l'adversaire a posé en 1er)
     if (estDernierTour) {
         let mesPenalites = calculerPointsMain(maMain);
         scoreJoueur += mesPenalites;
         
+        // Mise à jour visuelle du tableau côté joueur perdant
+        ajouterLigneScoreTableau(mancheActuelle, mesPenalites, 0);
+
         alert(`Fin de la manche ${mancheActuelle} ! Vous écopez de ${mesPenalites} points de pénalité.`);
         
         envoyerActionReseau('FIN_MANCHE_SCORE', { 
@@ -362,7 +365,6 @@ function actionDefausserBouton() {
             carteDefaussee: carteDefaussee
         });
 
-        // Si l'hôte est celui qui clôture le dernier tour
         if (estHote) {
             setTimeout(() => {
                 passerMancheSuivante();
