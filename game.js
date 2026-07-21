@@ -42,7 +42,7 @@ function demarrerJeuUI() {
 function lancerModeSolo() {
     modeJeu = "SOLO";
     demarrerJeuUI();
-    alert(`Bienvenue ${monPseudo} ! Mode Solo en cours de préparation...`);
+    initialiserPartieSolo();
 }
 
 // ==========================================
@@ -436,6 +436,13 @@ function actionDefausserBouton() {
     else {
         envoyerActionReseau('ACTION_DEFAUSSER', { carte: carteDefaussee });
     }
+
+    // Si on est en mode SOLO, on passe le tour au premier bot
+    if (modeJeu === "SOLO") {
+        passerTourSuivantSolo();
+        return;
+    }
+    
 }
 
 function calculerPointsMain(main) {
