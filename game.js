@@ -690,6 +690,8 @@ function passerMancheSuivante() {
 }
 
 function initialiserPartieReseau() {
+    modeJeu = "MULTI"; // S'assure qu'on est bien en mode multijoueur
+
     if (mancheActuelle === 1) {
         scoreJoueur = 0;
         scoreAdversaire = 0;
@@ -720,6 +722,9 @@ function initialiserPartieReseau() {
     afficherDefausse();
     afficherGroupesAPoser();
     
+    // Mettre à jour l'affichage de la liste des joueurs (Uniquement les 2 joueurs humains)
+    mettreAJourListeJoueursMultiUI();
+
     const zoneAdv = document.getElementById('tableau-adversaire');
     if (zoneAdv) zoneAdv.style.display = 'none';
 
@@ -803,6 +808,32 @@ function recevoirActionReseau(donnees) {
                 passerMancheSuivante();
             }, 1000);
         }
+    }
+    else if (donnees.type === 'DEBUT_PARTIE') {
+        modeJeu = "MULTI"; // Force le mode multi
+        pioche = donnees.contenu.pioche;
+        maMain = donnees.contenu.mainJoueur2;
+        defausse = donnees.contenu.defausse;
+        mancheActuelle = donnees.contenu.mancheActuelle;
+        monTour = false;
+        aPioche = false;
+        estDernierTour = false;
+        aPoseMaMain = false;
+        piocheDepuisDefausse = false;
+        
+        cartesSelectionnees = [];
+        groupesAposer = [];
+        afficherMain();
+        afficherDefausse();
+        afficherGroupesAPoser();
+        
+        // Mettre à jour la liste des joueurs sans bots
+        mettreAJourListeJoueursMultiUI();
+
+        const zoneAdv = document.getElementById('tableau-adversaire');
+        if (zoneAdv) zoneAdv.style.display = 'none';
+
+        mettreAJourStatutTour();
     }
 }
 
@@ -994,4 +1025,22 @@ function fermerModal(idModal) {
     if (modal) {
         modal.classList.remove('open');
     }
+}
+
+function mettreAJourListeJoueursMultiUI() {
+    const container = document.getElementById('players-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    // Joueur 1 (Vous)
+    const divVous = document.createElement('div');
+    divVous.className = 'player-card' + (monTour ? ' active-turn' : '');
+    divVous.innerHTML = `<b>${monPseudo} (Vous)</b>`;
+    container.appendChild(divVous);
+
+    // Joueur 2 (Adversaire)
+    const divAdv = document.createElement('div');
+    divAdv.className = 'player-card' + (!monTour ? ' active-turn' : '');
+    divAdv.innerHTML = `<b>Adversaire</b>`;
+    container.appendChild(divAdv);
 }
