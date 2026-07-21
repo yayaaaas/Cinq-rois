@@ -264,9 +264,8 @@ function validerEtPoserMain() {
         return;
     }
 
-    // S'il reste plus d'1 carte (celle à défausser pour finir)
     if (maMain.length > 1) {
-        alert(`Il vous reste ${maMain.length} carte(s) en main. Il faut placer toutes vos cartes dans des combinaisons (sauf 1 à défausser) !`);
+        alert(`Il vous reste ${maMain.length} carte(s) en main. Placez toutes vos cartes dans des combinaisons (sauf 1 à défausser) !`);
         return;
     }
 
@@ -275,11 +274,10 @@ function validerEtPoserMain() {
         return;
     }
 
-    // Victoire / Pose validée
     alert("🎉 VICTOIRE ! Vous avez posé toute votre main !");
     document.getElementById('status-message').innerText = "🏆 Vous avez remporté la manche !";
 
-    // Prévenir l'autre joueur
+    // Transmission RÉSEAU : On envoie tous les groupes de cartes au second joueur
     if (typeof envoyerActionReseau === 'function') {
         envoyerActionReseau('POSE_VICTOIRE', { groupes: groupesAposer });
     }
@@ -314,7 +312,6 @@ function initialiserPartieReseau() {
 }
 
 function recevoirActionReseau(donnees) {
-    // L'hôte reçoit la confirmation du Joueur 2 -> Il distribue le jeu !
     if (donnees.type === 'JOUEUR_PRET' && estHote) {
         document.getElementById('status-message').innerText = "Joueur 2 connecté ! C'est votre tour.";
         initialiserPartieReseau();
@@ -323,9 +320,8 @@ function recevoirActionReseau(donnees) {
         pioche = donnees.contenu.pioche;
         maMain = donnees.contenu.mainJoueur2;
         defausse = donnees.contenu.defausse;
-        monTour = false; // Le joueur 2 attend son tour
+        monTour = false;
         
-        // Rafraîchissement complet de l'écran du Joueur 2
         cartesSelectionnees = [];
         afficherMain();
         afficherDefausse();
@@ -341,16 +337,44 @@ function recevoirActionReseau(donnees) {
     else if (donnees.type === 'ACTION_DEFAUSSER') {
         defausse.push(donnees.contenu.carte);
         afficherDefausse();
-        monTour = true; // C'est maintenant notre tour !
+        monTour = true;
         mettreAJourStatutTour();
     }
-    else if (donnees.type === 'POSE') {
-        alert("L'autre joueur a posé toute sa main ! C'est le dernier tour de la manche.");
-    }
+    // RÉCEPTION DE LA POSE ADVERSE
     else if (donnees.type === 'POSE_VICTOIRE') {
+        afficherPoseAdversaire(donnees.contenu.groupes);
         alert("L'autre joueur a posé toute sa main et a gagné la manche ! ❌");
         document.getElementById('status-message').innerText = "Défaite pour cette manche...";
     }
+}
+
+// Fonction pour dessiner les combinaisons de l'adversaire
+function afficherPoseAdversaire(groupesAdverses) {
+    const zoneAdversaire = document.getElementById('tableau-adversaire');
+    const container = document.getElementById('zones-combinaisons-adversaire');
+    
+    if (!zoneAdversaire || !container) return;
+    
+    zoneAdversaire.style.display = 'block'; // Rendre la zone visible
+    container.innerHTML = '';
+
+    groupesAdverses.forEach((groupe) => {
+        const divGroupe = document.createElement('div');
+        divGroupe.className = 'groupe-cartes';
+        
+        groupe.forEach(carte => {
+            const cardDiv = document.createElement('div');
+            cardDiv.classList.add('card', carte.couleur);
+            cardDiv.innerHTML = `
+                <div>${carte.valeur}</div>
+                <div style="font-size: 20px;">${obtenirSymbole(carte.couleur)}</div>
+                <div style="text-align: right;">${carte.valeur}</div>
+            `;
+            divGroupe.appendChild(cardDiv);
+        });
+
+        container.appendChild(divGroupe);
+    });
 }
 
 // Fonction pour regrouper les cartes sélectionnées dans la zone de pose
