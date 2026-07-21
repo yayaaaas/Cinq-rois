@@ -31,12 +31,12 @@ function afficherMenuMulti() {
 }
 
 function demarrerJeuUI() {
-    let nameInput = document.getElementById('player-name').value.trim();
-    if (nameInput !== "") {
-        monPseudo = nameInput;
-    }
+    // Masquer le menu principal
     document.getElementById('main-menu').style.display = 'none';
-    document.getElementById('game-zone').style.display = 'block';
+
+    // Afficher les zones de jeu / conteneur principal
+    const gameContainer = document.getElementById('game-container');
+    if (gameContainer) gameContainer.style.display = 'flex'; // ou 'block'
 }
 
 function lancerModeSolo() {
@@ -957,5 +957,60 @@ function fermerModal(idModal) {
     const modal = document.getElementById(idModal);
     if (modal) {
         modal.classList.remove('open');
+    }
+}
+
+// ==========================================
+// FONCTION DE RETOUR À L'ACCUEIL / MENU
+// ==========================================
+function retourAccueil() {
+    // Confirmation si une partie est en cours
+    const confirmer = confirm("Voulez-vous vraiment quitter la partie et revenir au menu principal ?");
+    if (!confirmer) return;
+
+    // 1. Réinitialisation des variables logiques
+    pioche = [];
+    defausse = [];
+    maMain = [];
+    cartesSelectionnees = [];
+    groupesAposer = [];
+    aPioche = false;
+    monTour = false;
+    aPoseMaMain = false;
+    estDernierTour = false;
+
+    // Si on a des bots ou des connexions multijoueur
+    if (typeof Peer !== 'undefined' && peer) {
+        try { peer.destroy(); } catch(e) {}
+    }
+
+    // 2. Masquer les éléments de jeu
+    const gameContainer = document.getElementById('game-container');
+    if (gameContainer) {
+        gameContainer.style.display = 'none';
+    }
+    
+    const table = document.getElementById('table');
+    if (table) table.style.display = 'none';
+
+    const tableauPose = document.getElementById('tableau-pose');
+    if (tableauPose) tableauPose.style.display = 'none';
+
+    // 3. Réafficher le menu principal
+    const mainMenu = document.getElementById('main-menu');
+    if (mainMenu) {
+        mainMenu.style.display = 'block';
+    }
+
+    // Masquer le sous-panel multijoueur s'il était ouvert
+    const multiPanel = document.getElementById('multi-panel');
+    if (multiPanel) {
+        multiPanel.style.display = 'none';
+    }
+
+    // Réinitialiser les messages de statut
+    const statusMsg = document.getElementById('status-message');
+    if (statusMsg) {
+        statusMsg.innerText = "Bienvenue ! Choisissez un mode de jeu.";
     }
 }
