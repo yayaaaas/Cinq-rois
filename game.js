@@ -361,6 +361,13 @@ function actionDefausserBouton() {
             penalites: mesPenalites,
             carteDefaussee: carteDefaussee
         });
+
+        // Si l'hôte est celui qui clôture le dernier tour
+        if (estHote) {
+            setTimeout(() => {
+                passerMancheSuivante();
+            }, 1000);
+        }
         return;
     }
 
