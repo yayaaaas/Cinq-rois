@@ -516,6 +516,7 @@ function initialiserPartieReseau() {
 
 function recevoirActionReseau(donnees) {
     if (donnees.type === 'JOUEUR_PRET' && estHote) {
+        demarrerJeuUI(); // S'assure que le menu disparaît bien pour l'hôte
         document.getElementById('status-message').innerText = "Joueur 2 connecté ! C'est votre tour.";
         initialiserPartieReseau();
     }
