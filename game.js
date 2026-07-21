@@ -253,6 +253,38 @@ function actionTrierMain() {
     afficherMain();
 }
 
+function validerEtPoserMain() {
+    // 1. Vérifier si c'est bien le tour du joueur
+    if (!monTour) {
+        alert("Ce n'est pas votre tour !");
+        return;
+    }
+
+    // 2. Vérifier qu'il a pioché avant de poser
+    if (!aPioche) {
+        alert("Vous devez piocher une carte avant de pouvoir poser votre main !");
+        return;
+    }
+
+    // 3. Règle du Cinq Rois : Il faut vider toute sa main dans des combinaisons
+    if (maMain.length > 0) {
+        alert(`Il vous reste ${maMain.length} carte(s) en main. Vous devez intégrer toutes vos cartes dans des combinaisons pour pouvoir poser !`);
+        return;
+    }
+
+    if (groupesAposer.length === 0) {
+        alert("Vous n'avez préparé aucune combinaison.");
+        return;
+    }
+
+    alert("Félicitations ! Vous avez posé toute votre main ! Pensez à défausser votre dernière carte pour finir le tour.");
+
+    // Envoi de la pose à l'adversaire via le réseau
+    if (typeof envoyerActionReseau === 'function') {
+        envoyerActionReseau('POSE', { groupes: groupesAposer });
+    }
+}
+
 // ==========================================
 // 5. INITIALISATION ET RÉSEAU
 // ==========================================
