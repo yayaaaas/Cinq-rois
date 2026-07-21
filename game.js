@@ -349,22 +349,84 @@ function validerEtPoserMain() {
         return;
     }
     if (!aPioche) {
-        alert("Vous devez piocher avant de poser !");
+        alert("Vous devez d'abord piocher une carte !");
         return;
     }
 
-    if (maMain.length > 1) {
-        alert(`Il vous reste ${maMain.length} carte(s) en main. Placez toutes vos cartes dans des combinaisons (sauf 1 à défausser) !`);
-        return;
-    }
+    // Vider les groupes invalides ou vides
+    groupesAposer = groupesAposer.filter(g => g.length > 0);
 
     if (groupesAposer.length === 0) {
-        alert("Vous n'avez préparé aucune combinaison.");
+        alert("Créez au moins un groupe de cartes à poser !");
         return;
     }
 
-    alert("Vous avez posé votre main ! Cliquez maintenant sur votre dernière carte et défaussez-la pour valider votre tour.");
+    // 1. Calculer le nombre total de cartes placées dans les groupes
+    let totalCartesDansGroupes = 0;
+    groupesAposer.forEach(g => totalCartesDansGroupes += g.length);
+
+    // Pour poser, il faut que (Toutes vos cartes - 1) soient dans des combinaisons valides
+    if (totalCartesDansGroupes !== maMain.length - 1) {
+        alert(`Vous devez placer exactement ${maMain.length - 1} cartes dans vos combinaisons (il doit vous rester exactement 1 carte à défausser) !`);
+        return;
+    }
+
+    // 2. Vérifier la validité de chaque groupe
+    for (let i = 0; i < groupesAposer.length; i++) {
+        if (!validerCombinaison(groupesAposer[i])) {
+            alert(`Le groupe ${i + 1} n'est pas une combinaison valide (suite ou brelan/carré) !`);
+            return;
+        }
+    }
+
+    // 3. Identifier la carte restante qui n'est dans aucun groupe
+    let indicesCartesPosees = [];
+    groupesAposer.forEach(g => {
+        g.forEach(carte => {
+            let idx = maMain.findIndex(c => c.valeur === carte.valeur && c.couleur === carte.couleur);
+            if (idx !== -1 && !indicesCartesPosees.includes(idx)) {
+                indicesCartesPosees.push(idx);
+            }
+        });
+    });
+
+    // La carte restante à défausser est celle dont l'indice n'est pas dans indicesCartesPosees
+    let nouvelleMain = [];
+    let carteADefausser = null;
+
+    maMain.forEach((carte, idx) => {
+        if (!indicesCartesPosees.includes(idx) && !carteADefausser) {
+            carteADefausser = carte;
+        } else if (!indicesCartesPosees.includes(idx)) {
+            nouvelleMain.push(carte);
+        }
+    });
+
+    // 4. On valide la pose
     aPoseMaMain = true;
+    
+    // Défausse automatique de la carte restante
+    if (carteADefausser) {
+        defausse.push(carteADefausser);
+        afficherDefausse();
+    }
+
+    // On retire les cartes posées de la main
+    maMain = [];
+    afficherMain();
+    afficherGroupesAPoser();
+
+    alert("Vos combinaisons sont posées et votre carte restante a été défaussée !");
+
+    // 5. Gestion de la fin de tour
+    if (modeJeu === "SOLO") {
+        if (!estDernierTour) {
+            estDernierTour = true;
+            indexJoueurQuiAPose = 0; // Vous avez posé en premier
+            alert("Vous avez fermé la manche ! C'est le DERNIER TOUR pour les bots.");
+        }
+        passerTourSuivantSolo();
+    }
 }
 
 function actionDefausserBouton() {
@@ -372,6 +434,15 @@ function actionDefausserBouton() {
         alert("Ce n'est pas votre tour !");
         return;
     }
+
+    // Sécurité : Si la main est déjà vide parce qu'on a tout posé, on passe directement le tour
+    if (maMain.length === 0 && aPoseMaMain) {
+        if (modeJeu === "SOLO") {
+            passerTourSuivantSolo();
+        }
+        return;
+    }
+
     if (!aPioche) {
         alert("Vous devez piocher d'abord !");
         return;
@@ -388,20 +459,41 @@ function actionDefausserBouton() {
         return;
     }
 
+    // Retirer la carte sélectionnée de la main et l'ajouter à la défausse
     let indexCarte = cartesSelectionnees[0];
     let carteDefaussee = maMain.splice(indexCarte, 1)[0];
     defausse.push(carteDefaussee);
 
+    // Réinitialisation des états du tour
     cartesSelectionnees = [];
     aPioche = false;
     monTour = false;
-    piocheDepuisDefausse = false; // Réinitialisation
+    piocheDepuisDefausse = false;
 
+    // Actualiser l'affichage
     afficherMain();
     afficherDefausse();
     mettreAJourStatutTour();
 
-    // Si c'était notre DERNIER TOUR
+    // ==========================================
+    // GESTION DU MODE SOLO (CONTRE LES BOTS)
+    // ==========================================
+    if (modeJeu === "SOLO") {
+        if (aPoseMaMain) {
+            if (!estDernierTour) {
+                estDernierTour = true;
+                indexJoueurQuiAPose = 0; // 0 = Vous
+                alert("Vous avez posé votre main ! Les 3 bots jouent leur DERNIER TOUR.");
+            }
+            aPoseMaMain = false;
+        }
+        passerTourSuivantSolo();
+        return;
+    }
+
+    // ==========================================
+    // GESTION DU MODE MULTIJOUEUR (RÉSEAU)
+    // ==========================================
     if (estDernierTour) {
         let mesPenalites = calculerPointsMain(maMain);
         scoreJoueur += mesPenalites;
@@ -423,7 +515,6 @@ function actionDefausserBouton() {
         return;
     }
 
-    // Si ON VIENT DE POSER en premier
     if (aPoseMaMain) {
         alert("Main transmise ! L'adversaire joue son dernier tour.");
         envoyerActionReseau('PREMIERE_POSE', { 
@@ -431,24 +522,9 @@ function actionDefausserBouton() {
             carteDefaussee: carteDefaussee 
         });
         aPoseMaMain = false;
-    } 
-    // Tour normal de défausse
-    else {
+    } else {
         envoyerActionReseau('ACTION_DEFAUSSER', { carte: carteDefaussee });
     }
-
-    // Si on est en mode SOLO, on passe le tour au premier bot
-    if (modeJeu === "SOLO") {
-        if (aPoseMaMain) {
-            estDernierTour = true;
-            indexJoueurQuiAPose = 0; // 0 = Vous
-            aPoseMaMain = false;
-            alert("Vous avez posé votre main ! Les 3 bots jouent leur DERNIER TOUR.");
-        }
-        passerTourSuivantSolo();
-        return;
-    }
-    
 }
 
 function calculerPointsMain(main) {
