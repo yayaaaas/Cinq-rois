@@ -7,16 +7,16 @@ const VALEURS = ['3', '4', '5', '6', '7', '8', '9', '10', 'V', 'D', 'R'];
 let pioche = [];
 let defausse = [];
 let maMain = [];
-let mancheActuelle = 1; 
+let mancheActuelle = 1; // Manche 1 à 11
 let aPioche = false;
-let monTour = false; // Gère le tour par tour
+let monTour = false; 
 let estHote = false;
 
 let cartesSelectionnees = [];
 let groupesAposer = [];
 
 let estDernierTour = false;
-let aPoseMaMain = false; // Déclaration globale corrigée
+let aPoseMaMain = false; 
 let scoreJoueur = 0;
 let scoreAdversaire = 0;
 
@@ -157,7 +157,7 @@ function afficherDefausse() {
 function mettreAJourStatutTour() {
     const status = document.getElementById('status-message');
     if (status) {
-        status.innerText = monTour ? "C'est VOTRE tour de jouer !" : "Tour de votre ADVERSAIRE...";
+        status.innerText = monTour ? `[Manche ${mancheActuelle}/11] C'est VOTRE tour de jouer !` : `[Manche ${mancheActuelle}/11] Tour de votre ADVERSAIRE...`;
     }
 }
 
@@ -355,7 +355,7 @@ function actionDefausserBouton() {
         let mesPenalites = calculerPointsMain(maMain);
         scoreJoueur += mesPenalites;
         
-        alert(`Fin de la manche ! Vous écopez de ${mesPenalites} points de pénalité.`);
+        alert(`Fin de la manche ${mancheActuelle} ! Vous écopez de ${mesPenalites} points de pénalité.`);
         
         envoyerActionReseau('FIN_MANCHE_SCORE', { 
             penalites: mesPenalites,
@@ -400,8 +400,23 @@ function calculerPointsMain(main) {
 }
 
 // ==========================================
-// 5. INITIALISATION ET RÉSEAU
+// 5. GESTION DES MANCHES ET DU RÉSEAU
 // ==========================================
+function passerMancheSuivante() {
+    mancheActuelle++;
+    
+    if (mancheActuelle > 11) {
+        let gagnant = scoreJoueur < scoreAdversaire ? "VOUS AVEZ GAGNÉ !" : scoreJoueur > scoreAdversaire ? "L'ADVERSAIRE A GAGNÉ !" : "ÉGALITÉ PARFAITE !";
+        alert(`🏆 FIN DE LA PARTIE ! 🏆\n\nScore Final :\n- Vous : ${scoreJoueur} pts\n- Adversaire : ${scoreAdversaire} pts\n\nRésultat : ${gagnant}`);
+        document.getElementById('status-message').innerText = `🏆 Fin de partie ! ${gagnant}`;
+        return;
+    }
+
+    if (estHote) {
+        initialiserPartieReseau();
+    }
+}
+
 function initialiserPartieReseau() {
     pioche = melanger(genererDeck());
     let nbCartes = mancheActuelle + 2; 
@@ -415,15 +430,25 @@ function initialiserPartieReseau() {
     }
     
     defausse = [pioche.pop()];
+    aPoseMaMain = false;
+    estDernierTour = false;
+    groupesAposer = [];
+    cartesSelectionnees = [];
     
     afficherMain();
     afficherDefausse();
+    afficherGroupesAPoser();
+    
+    const zoneAdv = document.getElementById('tableau-adversaire');
+    if (zoneAdv) zoneAdv.style.display = 'none';
+
     mettreAJourStatutTour();
 
     envoyerActionReseau('DEBUT_PARTIE', {
         pioche: pioche,
         mainJoueur2: mainJoueur2,
-        defausse: defausse
+        defausse: defausse,
+        mancheActuelle: mancheActuelle
     });
 }
 
@@ -436,6 +461,7 @@ function recevoirActionReseau(donnees) {
         pioche = donnees.contenu.pioche;
         maMain = donnees.contenu.mainJoueur2;
         defausse = donnees.contenu.defausse;
+        mancheActuelle = donnees.contenu.mancheActuelle;
         monTour = false;
         estDernierTour = false;
         aPoseMaMain = false;
@@ -445,6 +471,10 @@ function recevoirActionReseau(donnees) {
         afficherMain();
         afficherDefausse();
         afficherGroupesAPoser();
+        
+        const zoneAdv = document.getElementById('tableau-adversaire');
+        if (zoneAdv) zoneAdv.style.display = 'none';
+
         mettreAJourStatutTour();
     }
     else if (donnees.type === 'ACTION_PIOCHE_PIOCHE') {
@@ -468,14 +498,17 @@ function recevoirActionReseau(donnees) {
         estDernierTour = true;
         monTour = true;
         
-        alert("⚠️ L'adversaire a posé toute sa main ! C'est votre DERNIER TOUR pour poser vos combinaisons !");
-        document.getElementById('status-message').innerText = "⚠️ DERNIER TOUR ! Piochez, posez vos groupes et défaussez.";
+        alert(`⚠️ L'adversaire a posé toute sa main ! C'est votre DERNIER TOUR pour la manche ${mancheActuelle} !`);
+        document.getElementById('status-message').innerText = `⚠️ DERNIER TOUR (Manche ${mancheActuelle}) ! Piochez, posez vos groupes et défaussez.`;
     }
     else if (donnees.type === 'FIN_MANCHE_SCORE') {
-        defausse.push(donnees.contenu.carteDefaussee);
-        afficherDefausse();
+        if (donnees.contenu.carteDefaussee) {
+            defausse.push(donnees.contenu.carteDefaussee);
+            afficherDefausse();
+        }
         scoreAdversaire += donnees.contenu.penalites;
-        alert(`Manche terminée ! L'adversaire prend ${donnees.contenu.penalites} pts de pénalité.`);
-        document.getElementById('status-message').innerText = `Scores -> Vous: ${scoreJoueur} pts | Adversaire: ${scoreAdversaire} pts`;
+        alert(`Fin de la manche ${mancheActuelle} !\nScores cumulés -> Vous: ${scoreJoueur} pts | Adversaire: ${scoreAdversaire} pts`);
+        
+        passerMancheSuivante();
     }
 }
