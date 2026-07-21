@@ -254,21 +254,19 @@ function actionTrierMain() {
 }
 
 function validerEtPoserMain() {
-    // 1. Vérifier si c'est bien le tour du joueur
     if (!monTour) {
         alert("Ce n'est pas votre tour !");
         return;
     }
 
-    // 2. Vérifier qu'il a pioché avant de poser
     if (!aPioche) {
-        alert("Vous devez piocher une carte avant de pouvoir poser votre main !");
+        alert("Vous devez piocher une carte avant de poser votre main !");
         return;
     }
 
-    // 3. Règle du Cinq Rois : Il faut vider toute sa main dans des combinaisons
-    if (maMain.length > 0) {
-        alert(`Il vous reste ${maMain.length} carte(s) en main. Vous devez intégrer toutes vos cartes dans des combinaisons pour pouvoir poser !`);
+    // S'il reste plus d'1 carte (celle à défausser pour finir)
+    if (maMain.length > 1) {
+        alert(`Il vous reste ${maMain.length} carte(s) en main. Il faut placer toutes vos cartes dans des combinaisons (sauf 1 à défausser) !`);
         return;
     }
 
@@ -277,11 +275,13 @@ function validerEtPoserMain() {
         return;
     }
 
-    alert("Félicitations ! Vous avez posé toute votre main ! Pensez à défausser votre dernière carte pour finir le tour.");
+    // Victoire / Pose validée
+    alert("🎉 VICTOIRE ! Vous avez posé toute votre main !");
+    document.getElementById('status-message').innerText = "🏆 Vous avez remporté la manche !";
 
-    // Envoi de la pose à l'adversaire via le réseau
+    // Prévenir l'autre joueur
     if (typeof envoyerActionReseau === 'function') {
-        envoyerActionReseau('POSE', { groupes: groupesAposer });
+        envoyerActionReseau('POSE_VICTOIRE', { groupes: groupesAposer });
     }
 }
 
