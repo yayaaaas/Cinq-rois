@@ -78,6 +78,7 @@
                         <span>Défausse vide</span>
                     </div>
                 </div>
+                <button id="btn-cancel-draw" onclick="annulerPiocheDefausse()" style="display:none;">↩️ Annuler la pioche défausse</button>
 
                 <div id="tableau-adversaire" style="display: none;">
                     <h3>Combinaisons Adversaire</h3>
@@ -99,13 +100,16 @@
                     <div id="zones-combinaisons"></div>
                     <div class="buttons-bar">
                         <button id="btn-creer-groupe" onclick="creerNouveauGroupe()">+ Combinaison</button>
+                        <button id="btn-retirer-groupes" onclick="retirerCartesPosees()">↩ Retirer les cartes</button>
                         <button id="btn-valider-pose" onclick="validerEtPoserMain()">Poser tout</button>
                     </div>
                 </div>
 
                 <h3>Votre Main</h3>
                 <div class="buttons-bar">
+                    <button id="btn-deplacer-gauche" onclick="deplacerCarteSelectionnee(-1)">← Gauche</button>
                     <button id="btn-trier" onclick="actionTrierMain()">Trier ma main</button>
+                    <button id="btn-deplacer-droite" onclick="deplacerCarteSelectionnee(1)">Droite →</button>
                     <button id="btn-defausser" onclick="actionDefausserBouton()">Défausser la carte</button>
                 </div>
 
