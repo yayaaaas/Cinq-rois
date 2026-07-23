@@ -36,20 +36,21 @@ body {
 }
 
 #player-zone {
-    grid-column: 1 / -1; /* Prend toute la largeur en bas */
+    grid-column: 1 / -1;
 }
 
 /* Boutons & Barres d'action */
 .buttons-bar {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     margin: 10px 0;
+    flex-wrap: wrap;
 }
 
 button {
-    padding: 8px 15px;
-    font-size: 14px;
+    padding: 8px 12px;
+    font-size: 13px;
     font-weight: bold;
     border-radius: 6px;
     border: none;
@@ -59,6 +60,10 @@ button {
 
 #btn-trier { background-color: #3498db; color: white; }
 #btn-trier:hover { background-color: #2980b9; }
+
+#btn-deplacer-gauche, #btn-deplacer-droite { background-color: #9b59b6; color: white; }
+#btn-retirer-groupes { background-color: #e67e22; color: white; }
+#btn-cancel-draw { background-color: #e67e22; color: white; margin-top: 10px; }
 
 #btn-defausser { background-color: #e74c3c; color: white; }
 #btn-defausser:hover { background-color: #c0392b; }
@@ -113,7 +118,6 @@ button {
     user-select: none;
 }
 
-/* Couleurs des enseignes */
 .coeur { color: #e74c3c; }
 .carreau { color: #e67e22; }
 .trefle { color: #27ae60; }
@@ -136,7 +140,6 @@ button {
     justify-content: center;
 }
 
-/* Tableaux */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -153,7 +156,6 @@ tfoot {
     background-color: rgba(0, 0, 0, 0.2);
 }
 
-/* Menu Principal */
 #main-menu {
     background-color: #34495e;
     max-width: 450px;
@@ -192,7 +194,6 @@ tfoot {
     display: none;
 }
 
-/* Liste des Joueurs */
 #players-list {
     display: flex;
     flex-direction: column;
@@ -211,9 +212,6 @@ tfoot {
     background-color: #2e4053;
 }
 
-/* ==========================================
-   ADAPTATION MOBILE & SMARPHONE (< 850px)
-   ========================================== */
 @media screen and (max-width: 850px) {
     #game-container {
         display: flex;
@@ -236,7 +234,6 @@ tfoot {
         border-radius: 20px;
     }
 
-    /* Cartes réduites sur écran étroit */
     .card, .card-slot {
         width: 65px;
         height: 95px;
@@ -248,7 +245,6 @@ tfoot {
         font-size: 18px !important;
     }
 
-    /* Transformation en modales pop-up */
     .modal-panel {
         display: none;
         position: fixed;
