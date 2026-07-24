@@ -28,6 +28,8 @@ let joueursReseau = [];
 let monIndexReseau = 0;
 let indexJoueurActuelReseau = 0;
 let indexJoueurQuiAPoseReseau = -1;
+let mainsJoueursGlobales = {};
+let penalitesCumulees = {};
 
 function afficherMenuMulti() {
     const multiPanel = document.getElementById('multi-panel');
@@ -60,6 +62,8 @@ function reinitialiserVariablePartie() {
     monIndexReseau = 0;
     indexJoueurActuelReseau = 0;
     indexJoueurQuiAPoseReseau = -1;
+    mainsJoueursGlobales = {};
+    penalitesCumulees = {};
     
     if (typeof bots !== 'undefined') bots.forEach(b => b.score = 0);
     
@@ -75,6 +79,8 @@ function reinitialiserVariablePartie() {
 
     const tbody = document.getElementById('lignes-scores');
     if (tbody) tbody.innerHTML = '';
+
+    fermerModal('modal-fin-manche');
 }
 
 function lancerModeSolo() {
@@ -101,7 +107,7 @@ function retourAccueil() {
 }
 
 // ==========================================
-// 2. GENERATION DECK & REGLES
+// 2. GENERATION DECK & COMBINAISONS
 // ==========================================
 function genererDeck() {
     let deck = [];
@@ -177,7 +183,7 @@ function validerCombinaison(groupe) {
 }
 
 // ==========================================
-// 3. AFFICHAGE
+// 3. AFFICHAGE DE L'INTERFACE
 // ==========================================
 function obtenirSymbole(couleur) {
     if (couleur === 'coeur') return '♥';
@@ -284,7 +290,7 @@ function afficherGroupesAPoser() {
 }
 
 // ==========================================
-// 4. ACTIONS JOUEUR
+// 4. ACTIONS DU JOUEUR
 // ==========================================
 function verifierClicCarte(index) {
     if (cartesSelectionnees.includes(index)) {
@@ -384,7 +390,7 @@ function actionTrierMain() {
         if (a.couleur !== b.couleur) {
             return COULEURS.indexOf(a.couleur) - COULEURS.indexOf(b.couleur);
         }
-        return obtenirValeurNumerique(a.valeur) - obtenirValeurNumerique(a.valeur);
+        return obtenirValeurNumerique(a.valeur) - obtenirValeurNumerique(b.valeur);
     });
     cartesSelectionnees = [];
     afficherMain();
@@ -473,32 +479,25 @@ function actionDefausserBouton() {
     }
 
     // MULTIJOUEUR
-    let aPoseCeTour = false;
-    if (aPoseMaMain) {
-        aPoseCeTour = true;
+    if (!estDernierTour && aPoseMaMain) {
+        estDernierTour = true;
+        indexJoueurQuiAPoseReseau = monIndexReseau;
         aPoseMaMain = false;
     }
 
-    if (!estDernierTour && aPoseCeTour) {
-        estDernierTour = true;
-        indexJoueurQuiAPoseReseau = monIndexReseau;
-    }
+    // Enregistrer les points de pénalité du joueur
+    penalitesCumulees[monIndexReseau] = estDernierTour ? (monIndexReseau === indexJoueurQuiAPoseReseau ? 0 : calculerPointsMain(maMain)) : 0;
 
-    // Calcul pénalités si fin de tour en dernier tour
-    let mesPenalites = estDernierTour ? calculerPointsMain(maMain) : 0;
-
-    // Passer au joueur suivant
     let suivantIndex = (indexJoueurActuelReseau + 1) % joueursReseau.length;
-
-    // Vérification de la fin de la manche (si le tour revient à celui qui a posé)
     let finMancheAtteinte = (estDernierTour && suivantIndex === indexJoueurQuiAPoseReseau);
 
     if (finMancheAtteinte) {
-        // Appliquer les scores pour tout le monde
-        joueursReseau[monIndexReseau].score += mesPenalites;
+        joueursReseau.forEach(j => {
+            let ptsPen = penalitesCumulees[j.index] || 0;
+            j.score = (j.score || 0) + ptsPen;
+        });
     }
 
-    let mainsMaj = {};
     mainsJoueursGlobales[monIndexReseau] = maMain;
 
     let nouvelEtat = {
@@ -510,6 +509,7 @@ function actionDefausserBouton() {
         estDernierTour: estDernierTour,
         indexQuiAPose: indexJoueurQuiAPoseReseau,
         joueurs: joueursReseau,
+        penalites: penalitesCumulees,
         finDeManche: finMancheAtteinte
     };
 
@@ -527,6 +527,7 @@ function miseAJourActionReseau() {
         estDernierTour: estDernierTour,
         indexQuiAPose: indexJoueurQuiAPoseReseau,
         joueurs: joueursReseau,
+        penalites: penalitesCumulees,
         finDeManche: false
     };
     envoyerEtatJeuFirebase(nouvelEtat);
@@ -546,10 +547,8 @@ function calculerPointsMain(main) {
 }
 
 // ==========================================
-// 5. SYNCHRONISATION EN TEMPS REEL (FIREBASE)
+// 5. SYNCHRONISATION FIREBASE
 // ==========================================
-let mainsJoueursGlobales = {};
-
 function preparerTableauScoresUI() {
     const headerTr = document.getElementById('score-header');
     const footerTr = document.getElementById('score-footer');
@@ -577,6 +576,7 @@ function demarrerMancheReseau() {
     pioche = melanger(genererDeck());
     let nbCartes = mancheActuelle + 2;
     mainsJoueursGlobales = {};
+    penalitesCumulees = {};
 
     joueursReseau.forEach(j => {
         let mainJ = [];
@@ -597,6 +597,7 @@ function demarrerMancheReseau() {
         estDernierTour: false,
         indexQuiAPose: -1,
         joueurs: joueursReseau,
+        penalites: penalitesCumulees,
         finDeManche: false
     };
 
@@ -614,6 +615,7 @@ function synchroniserEtatJeu(state, confirmations) {
     indexJoueurActuelReseau = state.indexActuel;
     estDernierTour = state.estDernierTour;
     indexJoueurQuiAPoseReseau = state.indexQuiAPose;
+    penalitesCumulees = state.penalites || {};
 
     maMain = mainsJoueursGlobales[monIndexReseau] || [];
     monTour = (monIndexReseau === indexJoueurActuelReseau);
@@ -625,22 +627,46 @@ function synchroniserEtatJeu(state, confirmations) {
     mettreAJourListeJoueursMultiUI();
     mettreAJourStatutTour();
 
-    // FIN DE MANCHE
+    // FIN DE MANCHE : Affichage de la modale de bilan
     if (state.finDeManche) {
         let nbConf = confirmations ? Object.keys(confirmations).length : 0;
-        document.getElementById('status-message').innerText = `🏁 Fin de la manche ${mancheActuelle} ! Joueurs prêts : ${nbConf}/${joueursReseau.length}`;
+        
+        let recapHTML = `<b>Récapitulatif des pénalités (Manche ${mancheActuelle}) :</b><br><br>`;
+        joueursReseau.forEach(j => {
+            let pen = penalitesCumulees[j.index] || 0;
+            recapHTML += `• <b>${j.pseudo}</b> : +${pen} pts (Total: ${j.score || 0} pts)<br>`;
+        });
 
-        // Si tout le monde a validé sa fin de manche
+        document.getElementById('recap-fin-manche-content').innerHTML = recapHTML;
+        document.getElementById('attente-joueurs-msg').innerText = `Joueurs prêts : ${nbConf}/${joueursReseau.length}`;
+
+        ouvrirModal('modal-fin-manche');
+
+        // Désactiver le bouton si le joueur a déjà cliqué
+        let btnValider = document.getElementById('btn-valider-fin-manche');
+        if (confirmations && confirmations[monIndexReseau]) {
+            btnValider.disabled = true;
+            btnValider.innerText = "✅ En attente des autres joueurs...";
+            btnValider.style.backgroundColor = "#7f8c8d";
+        } else {
+            btnValider.disabled = false;
+            btnValider.innerText = "👍 Prêt pour la manche suivante !";
+            btnValider.style.backgroundColor = "#2ecc71";
+        }
+
+        // Si l'hôte constate que tout le monde a validé
         if (estHote && nbConf >= joueursReseau.length) {
             mancheActuelle++;
             if (mancheActuelle > 11) {
                 alert("🏆 PARTIE TERMINÉE !");
             } else {
-                // Effacer les confirmations et lancer la manche suivante
                 roomRef.child('confirmations').remove();
+                fermerModal('modal-fin-manche');
                 demarrerMancheReseau();
             }
         }
+    } else {
+        fermerModal('modal-fin-manche');
     }
 }
 
