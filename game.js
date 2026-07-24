@@ -61,16 +61,31 @@ function demarrerJeuUI() {
 function reinitialiserVariablePartie() {
     mancheActuelle = 1;
     scoreJoueur = 0;
-    bots.forEach(b => b.score = 0);
+    scoreAdversaire = 0;
+    joueursReseau = [];
+    monIndexReseau = 0;
+    indexJoueurActuelReseau = 0;
+    indexJoueurQuiAPoseReseau = -1;
+    confirmationsFinManche = 0;
+    penalitesCumuleesManche = {};
+    
+    if (typeof bots !== 'undefined') {
+        bots.forEach(b => b.score = 0);
+    }
+    
     maMain = [];
+    pioche = [];
+    defausse = [];
     groupesAposer = [];
     cartesSelectionnees = [];
     aPoseMaMain = false;
     estDernierTour = false;
     aPioche = false;
     piocheDepuisDefausse = false;
-    confirmationsFinManche = 0;
-    penalitesCumuleesManche = {};
+
+    // Vider les lignes HTML du tableau des scores
+    const tbody = document.getElementById('lignes-scores');
+    if (tbody) tbody.innerHTML = '';
 }
 
 function lancerModeSolo() {
