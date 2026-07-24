@@ -556,28 +556,22 @@ function actionDefausserBouton() {
         return;
     }
 
-    if (maMain.length === 0 && aPoseMaMain) {
-        if (modeJeu === "SOLO") {
-            passerTourSuivantSolo();
-        } else {
-            envoyerActionReseau('ACTION_DEFAUSSER', {
-                indexJoueur: monIndexReseau,
-                carteDefaussee: null,
-                premierPose: false,
-                groupesPosees: groupesAposer,
-                penalites: 0
-            });
-        }
-        return;
-    }
-
     if (!aPioche) {
         alert("Vous devez piocher d'abord !");
         return;
     }
 
+    // AUTO-DÉTECTION DE LA POSE COMPLETE :
+    // Si des groupes sont créés et qu'il ne reste qu'1 seule carte en main
+    if (groupesAposer.length > 0 && maMain.length === 1) {
+        let tousValides = groupesAposer.every(g => validerCombinaison(g));
+        if (tousValides) {
+            aPoseMaMain = true; // Pose validée automatiquement !
+        }
+    }
+
     if (piocheDepuisDefausse && !aPoseMaMain && !estDernierTour) {
-        alert("⚠️ RÈGLE : Vous avez pioché dans la défausse, vous êtes OBLIGÉ de poser toute votre main ce tour-ci !");
+        alert("⚠️ RÈGLE : Vous avez pioché dans la défausse, vous êtes OBLIGÉ de placer toute votre main dans des combinaisons valides avant de défausser !");
         return;
     }
 
@@ -586,6 +580,7 @@ function actionDefausserBouton() {
         return;
     }
 
+    // Défausser la carte sélectionnée
     let indexCarte = cartesSelectionnees[0];
     let carteDefaussee = maMain.splice(indexCarte, 1)[0];
     defausse.push(carteDefaussee);
@@ -599,12 +594,13 @@ function actionDefausserBouton() {
     afficherDefausse();
     mettreAJourStatutTour();
 
+    // MODE SOLO
     if (modeJeu === "SOLO") {
         if (aPoseMaMain) {
             if (!estDernierTour) {
                 estDernierTour = true;
-                indexJoueurQuiAPose = 0; 
-                alert("Vous avez posé votre main ! Les 3 bots jouent leur DERNIER TOUR.");
+                indexJoueurQuiAPose = 0; // Vous avez posé
+                alert("Vous avez posé toute votre main ! Les 3 bots jouent leur DERNIER TOUR.");
             }
             aPoseMaMain = false;
         }
@@ -612,7 +608,7 @@ function actionDefausserBouton() {
         return;
     }
 
-    // MULTIJOUEUR
+    // MODE MULTIJOUEUR
     let premierPoseSignal = false;
     if (aPoseMaMain) {
         premierPoseSignal = true;
