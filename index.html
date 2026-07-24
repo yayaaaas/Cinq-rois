@@ -25,6 +25,15 @@
 
         <div id="multi-panel" style="display: none;" class="menu-box">
             <h4>Multijoueur</h4>
+            <label for="nb-players-select"><b>Nombre de joueurs à la table :</b></label><br>
+            <select id="nb-players-select" style="padding: 8px; margin: 8px 0; border-radius: 5px; font-weight: bold;">
+                <option value="2">2 Joueurs</option>
+                <option value="3">3 Joueurs</option>
+                <option value="4">4 Joueurs</option>
+                <option value="5">5 Joueurs</option>
+                <option value="6">6 Joueurs</option>
+                <option value="7">7 Joueurs</option>
+            </select><br>
             <button id="btn-create" onclick="creerPartie()">Créer une partie</button>
             <p id="my-id-display"></p>
             <hr>
@@ -51,19 +60,11 @@
                 </div>
                 <table>
                     <thead>
-                        <tr id="score-header">
-                            <th>Manche</th>
-                            <th>Vous</th>
-                            <th>Adversaire</th>
-                        </tr>
+                        <tr id="score-header"></tr>
                     </thead>
                     <tbody id="lignes-scores"></tbody>
                     <tfoot>
-                        <tr id="score-footer">
-                            <th>TOTAL</th>
-                            <th id="total-joueur">0</th>
-                            <th id="total-adversaire">0</th>
-                        </tr>
+                        <tr id="score-footer"></tr>
                     </tfoot>
                 </table>
             </div>
@@ -81,7 +82,7 @@
                 <button id="btn-cancel-draw" onclick="annulerPiocheDefausse()" style="display:none;">↩️ Annuler la pioche défausse</button>
 
                 <div id="tableau-adversaire" style="display: none;">
-                    <h3>Combinaisons Adversaire</h3>
+                    <h3>Combinaisons des Joueurs</h3>
                     <div id="zones-combinaisons-adversaire"></div>
                 </div>
             </div>
