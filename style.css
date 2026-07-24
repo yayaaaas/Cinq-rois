@@ -304,3 +304,21 @@ tfoot {
 #btn-home:active {
     transform: scale(0.95);
 }
+
+#nb-players-select {
+    background-color: #34495e;
+    color: white;
+    border: 1px solid #f1c40f;
+    font-size: 15px;
+    width: 80%;
+}
+
+/* Ajustement dynamique des colonnes de score */
+table {
+    font-size: 12px;
+}
+
+th, td {
+    padding: 4px;
+    text-align: center;
+}
