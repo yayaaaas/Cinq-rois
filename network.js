@@ -1,27 +1,35 @@
 var peer = null;
-var conn = null;
+var conns = []; // Liste des connexions (pour l'Hôte)
+var connHote = null; // Connexion vers l'hôte (pour les Invités)
+var nbJoueursAttendus = 2;
 
 function creerPartie() {
     const nameInput = document.getElementById('player-name').value.trim();
     if (nameInput !== "") monPseudo = nameInput;
 
+    const selectNb = document.getElementById('nb-players-select');
+    if (selectNb) nbJoueursAttendus = parseInt(selectNb.value);
+
     const codePartie = "5ROIS-" + Math.floor(1000 + Math.random() * 9000);
     peer = new Peer(codePartie);
 
     peer.on('open', (id) => {
-        // Affiche le code dans le panneau de connexion
         document.getElementById('my-id-display').innerHTML = `Partie créée ! Code : <b style="font-size: 20px; color: #f1c40f;">${id}</b>`;
-        document.getElementById('status-message').innerText = "Transmettez ce code au Joueur 2 et attendez sa connexion...";
+        document.getElementById('status-message').innerText = `En attente de ${nbJoueursAttendus - 1} autre(s) joueur(s)...`;
         
         estHote = true;
-        monTour = true;
-        
-        // On NE MASQUE PAS le menu tout de suite pour que l'hôte puisse lire le code !
+        monIndexReseau = 0;
+        joueursReseau = [{ index: 0, pseudo: monPseudo, peerId: id, score: 0 }];
     });
 
     peer.on('connection', (connection) => {
-        conn = connection;
-        initialiserConnexion();
+        if (conns.length >= nbJoueursAttendus - 1) {
+            connection.close(); // Table pleine
+            return;
+        }
+
+        conns.push(connection);
+        initialiserConnexionHote(connection);
     });
 
     peer.on('error', (err) => {
@@ -30,7 +38,6 @@ function creerPartie() {
 }
 
 function rejoindrePartie() {
-    // Récupération du pseudo saisi
     const nameInput = document.getElementById('player-name').value.trim();
     if (nameInput !== "") monPseudo = nameInput;
 
@@ -42,41 +49,52 @@ function rejoindrePartie() {
 
     peer = new Peer();
 
-    peer.on('open', () => {
-        conn = peer.connect(codeEntre);
-        initialiserConnexion();
+    peer.on('open', (id) => {
+        connHote = peer.connect(codeEntre);
+        initialiserConnexionInvite(connHote);
         estHote = false;
-        monTour = false;
-        
-        // Affiche l'interface de jeu pour le Joueur 2
         demarrerJeuUI();
     });
 }
 
-function initialiserConnexion() {
-    conn.on('open', () => {
-        document.getElementById('status-message').innerText = "Connecté ! Synchronisation...";
-
-        if (!estHote) {
-            setTimeout(() => {
-                envoyerActionReseau('JOUEUR_PRET', {});
-            }, 500);
-        }
+function initialiserConnexionHote(connection) {
+    connection.on('open', () => {
+        document.getElementById('status-message').innerText = `Un joueur s'est connecté. (${conns.length + 1}/${nbJoueursAttendus})`;
     });
 
-    conn.on('data', (data) => {
-        if (typeof recevoirActionReseau === 'function') {
-            recevoirActionReseau(data);
-        }
+    connection.on('data', (data) => {
+        recevoirActionReseau(data, connection);
     });
 
-    conn.on('close', () => {
-        document.getElementById('status-message').innerText = "Adversaire déconnecté.";
+    connection.on('close', () => {
+        document.getElementById('status-message').innerText = "Un joueur s'est déconnecté.";
+    });
+}
+
+function initialiserConnexionInvite(connection) {
+    connection.on('open', () => {
+        document.getElementById('status-message').innerText = "Connecté à la table ! En attente du début...";
+        envoyerActionReseau('JOUEUR_PRET', { pseudo: monPseudo });
+    });
+
+    connection.on('data', (data) => {
+        recevoirActionReseau(data, connection);
+    });
+
+    connection.on('close', () => {
+        alert("La connexion avec l'Hôte a été interrompue.");
     });
 }
 
 function envoyerActionReseau(type, contenu) {
-    if (conn && conn.open) {
-        conn.send({ type: type, contenu: contenu });
+    const message = { type: type, contenu: contenu };
+    if (estHote) {
+        // L'hôte envoie le message à tous les invités
+        conns.forEach(c => {
+            if (c.open) c.send(message);
+        });
+    } else if (connHote && connHote.open) {
+        // L'invité envoie uniquement à l'hôte
+        connHote.send(message);
     }
 }
