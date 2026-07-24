@@ -570,6 +570,9 @@ function preparerTableauScoresUI() {
     }
 }
 
+// Variable pour éviter de répéter l'annonce de nouvelle manche
+let derniereMancheAnnoncee = 0;
+
 function demarrerMancheReseau() {
     modeJeu = "MULTI";
     pioche = melanger(genererDeck());
@@ -606,6 +609,7 @@ function demarrerMancheReseau() {
 function synchroniserEtatJeu(state, confirmations) {
     if (!state) return;
 
+    let ancienneManche = mancheActuelle;
     mancheActuelle = state.mancheActuelle;
     pioche = state.pioche || [];
     defausse = state.defausse || [];
@@ -626,7 +630,24 @@ function synchroniserEtatJeu(state, confirmations) {
     mettreAJourListeJoueursMultiUI();
     mettreAJourStatutTour();
 
-    // FIN DE MANCHE : Affichage de la modale de bilan
+    // 1. ANNONCE DE NOUVELLE MANCHE
+    if (!state.finDeManche && mancheActuelle !== derniereMancheAnnoncee) {
+        derniereMancheAnnoncee = mancheActuelle;
+        fermerModal('modal-fin-manche');
+
+        let valeurAtout = (mancheActuelle + 2).toString();
+        if (valeurAtout === '11') valeurAtout = 'Valet (V)';
+        if (valeurAtout === '12') valeurAtout = 'Dame (D)';
+        if (valeurAtout === '13') valeurAtout = 'Roi (R)';
+
+        // Notification temporaire en haut
+        const statusMsg = document.getElementById('status-message');
+        if (statusMsg) {
+            statusMsg.innerHTML = `🚀 <b>DÉBUT DE LA MANCHE ${mancheActuelle}/11</b> — ${mancheActuelle + 2} cartes distribuées | <b>Atout : ${valeurAtout} ⭐</b>`;
+        }
+    }
+
+    // 2. FIN DE MANCHE : Affichage de la modale Bilan
     if (state.finDeManche) {
         let nbConf = confirmations ? Object.keys(confirmations).length : 0;
         
@@ -652,18 +673,17 @@ function synchroniserEtatJeu(state, confirmations) {
             btnValider.style.backgroundColor = "#2ecc71";
         }
 
+        // Passage à la manche suivante dès que tout le monde est prêt
         if (estHote && nbConf >= joueursReseau.length) {
             mancheActuelle++;
             if (mancheActuelle > 11) {
-                alert("🏆 PARTIE TERMINÉE !");
+                alert("🏆 PARTIE TERMINÉE ! Tous les 11 manches ont été jouées.");
             } else {
                 roomRef.child('confirmations').remove();
                 fermerModal('modal-fin-manche');
                 demarrerMancheReseau();
             }
         }
-    } else {
-        fermerModal('modal-fin-manche');
     }
 }
 
