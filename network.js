@@ -11,7 +11,7 @@ const firebaseConfig = {
   appId: "1:1026512231197:web:2d2d49aeb2a48cbdf69ff4"
 };
 
-// Initialisation de Firebase
+// Initialisation
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
@@ -106,7 +106,7 @@ function ecouterSalonFirebase() {
 
         joueursReseau = roomData.joueurs || [];
 
-        // L'Hôte démarre la partie quand la table est complète
+        // L'Hôte démarre la partie quand la table est pleine
         if (estHote && roomData.status === "WAITING" && joueursReseau.length === nbJoueursAttendus) {
             roomRef.child('status').set("PLAYING");
             preparerTableauScoresUI();
@@ -115,7 +115,7 @@ function ecouterSalonFirebase() {
             return;
         }
 
-        // Synchronisation continue de l'état du jeu
+        // Synchronisation de l'état du jeu
         if (roomData.gameState) {
             synchroniserEtatJeu(roomData.gameState, roomData.confirmations);
         }
