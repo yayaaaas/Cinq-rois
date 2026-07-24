@@ -675,10 +675,12 @@ function mettreAJourLigneScoresMultiUI(manche, tableauPenalites) {
 }
 
 function demarrerMancheReseau() {
+    modeJeu = "MULTI"; // Force le mode multijoueur
     pioche = melanger(genererDeck());
     let nbCartes = mancheActuelle + 2;
     let mainsJoueurs = {};
 
+    // Distribution des mains pour chaque joueur connecté
     joueursReseau.forEach(j => {
         let mainJ = [];
         for (let i = 0; i < nbCartes; i++) {
@@ -688,10 +690,31 @@ function demarrerMancheReseau() {
     });
 
     defausse = [pioche.pop()];
-    indexJoueurActuelReseau = 0;
+    indexJoueurActuelReseau = 0; // L'hôte (index 0) commence toujours la manche
     indexJoueurQuiAPoseReseau = -1;
     estDernierTour = false;
 
+    // --- INITIALISATION LOCALE POUR L'HÔTE (Index 0) ---
+    monIndexReseau = 0;
+    maMain = mainsJoueurs[0] || [];
+    monTour = true;
+    aPioche = false;
+    aPoseMaMain = false;
+    piocheDepuisDefausse = false;
+    cartesSelectionnees = [];
+    groupesAposer = [];
+
+    // Affichage de l'interface de l'Hôte
+    afficherMain();
+    afficherDefausse();
+    afficherGroupesAPoser();
+    mettreAJourListeJoueursMultiUI();
+    mettreAJourStatutTour();
+
+    const zoneAdv = document.getElementById('tableau-adversaire');
+    if (zoneAdv) zoneAdv.style.display = 'none';
+
+    // Envoi des données de la manche à tous les invités
     envoyerActionReseau('DEBUT_MANCHE', {
         mancheActuelle: mancheActuelle,
         pioche: pioche,
