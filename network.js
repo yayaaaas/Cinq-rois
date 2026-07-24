@@ -4,6 +4,7 @@ var connHote = null; // Connexion vers l'hôte (pour les Invités)
 var nbJoueursAttendus = 2;
 
 function creerPartie() {
+    modeJeu = "MULTI"; // On bascule explicitement en mode Multijoueur
     const nameInput = document.getElementById('player-name').value.trim();
     if (nameInput !== "") monPseudo = nameInput;
 
@@ -38,6 +39,7 @@ function creerPartie() {
 }
 
 function rejoindrePartie() {
+    modeJeu = "MULTI"; // On bascule explicitement en mode Multijoueur
     const nameInput = document.getElementById('player-name').value.trim();
     if (nameInput !== "") monPseudo = nameInput;
 
