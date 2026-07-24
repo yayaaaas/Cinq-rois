@@ -5,8 +5,8 @@ var nbJoueursAttendus = 2;
 
 function creerPartie() {
     modeJeu = "MULTI";
-    
-    // Réinitialisation complète des données de jeu de la session précédente
+
+    // Réinitialisation complète avant création
     if (typeof reinitialiserVariablePartie === 'function') {
         reinitialiserVariablePartie();
     }
@@ -17,6 +17,7 @@ function creerPartie() {
     const selectNb = document.getElementById('nb-players-select');
     if (selectNb) nbJoueursAttendus = parseInt(selectNb.value);
 
+    conns = [];
     const codePartie = "5ROIS-" + Math.floor(1000 + Math.random() * 9000);
     peer = new Peer(codePartie);
 
@@ -47,7 +48,7 @@ function creerPartie() {
 function rejoindrePartie() {
     modeJeu = "MULTI";
 
-    // Réinitialisation complète des données de jeu de la session précédente
+    // Réinitialisation complète avant de rejoindre
     if (typeof reinitialiserVariablePartie === 'function') {
         reinitialiserVariablePartie();
     }
@@ -63,7 +64,7 @@ function rejoindrePartie() {
 
     peer = new Peer();
 
-    peer.on('open', (id) => {
+    peer.on('open', () => {
         connHote = peer.connect(codeEntre);
         initialiserConnexionInvite(connHote);
         estHote = false;
@@ -103,10 +104,12 @@ function initialiserConnexionInvite(connection) {
 function envoyerActionReseau(type, contenu) {
     const message = { type: type, contenu: contenu };
     if (estHote) {
+        // L'Hôte diffuse le message à tous les invités connectés
         conns.forEach(c => {
-            if (c.open) c.send(message);
+            if (c && c.open) c.send(message);
         });
     } else if (connHote && connHote.open) {
+        // L'invité envoie son message à l'Hôte
         connHote.send(message);
     }
 }
