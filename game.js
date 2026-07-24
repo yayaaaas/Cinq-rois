@@ -84,6 +84,10 @@ function reinitialiserVariablePartie() {
     const tbody = document.getElementById('lignes-scores');
     if (tbody) tbody.innerHTML = '';
 
+    // Vider explicitement les zones de cartes posées
+    const containerPoses = document.getElementById('zones-combinaisons');
+    if (containerPoses) containerPoses.innerHTML = '';
+
     afficherGroupesAPoser();
     fermerModal('modal-fin-manche');
 }
@@ -601,7 +605,11 @@ function demarrerMancheReseau() {
     let nbCartes = mancheActuelle + 2;
     mainsJoueursGlobales = {};
     penalitesCumulees = {};
-    groupesAposer = []; // Nettoyage de la zone de pose
+
+    // Nettoyage absolu du tapis de pose local
+    groupesAposer = [];
+    cartesSelectionnees = [];
+    afficherGroupesAPoser();
 
     joueursReseau.forEach(j => {
         let mainJ = [];
@@ -644,9 +652,10 @@ function synchroniserEtatJeu(state, confirmations) {
     indexJoueurQuiAPoseReseau = state.indexQuiAPose;
     penalitesCumulees = state.penalites || {};
 
-    // Vider les combinaisons à chaque nouvelle manche
+    // Vider impérativement le tapis lors de chaque changement de manche
     if (mancheActuelle !== ancienneManche) {
         groupesAposer = [];
+        cartesSelectionnees = [];
     }
 
     maMain = mainsJoueursGlobales[monIndexReseau] || [];
@@ -773,7 +782,9 @@ function initialiserPartieSolo() {
     defausse = [pioche.pop()];
     aPoseMaMain = false;
     estDernierTour = false;
-    groupesAposer = []; // Reinitialisation explicite des combinaisons
+
+    // Réinitialisation explicite du tapis de pose pour le Solo
+    groupesAposer = [];
     cartesSelectionnees = [];
     aPioche = false;
 
@@ -790,7 +801,7 @@ function initialiserPartieSolo() {
     preparerTableauScoresUI();
     afficherMain();
     afficherDefausse();
-    afficherGroupesAPoser(); // Nettoie le tapis de jeu
+    afficherGroupesAPoser(); // Nettoie le conteneur HTML
     mettreAJourListeJoueursUI();
     mettreAJourStatutTour();
 
