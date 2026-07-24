@@ -28,9 +28,6 @@ let joueursReseau = [];
 let monIndexReseau = 0;
 let indexJoueurActuelReseau = 0;
 let indexJoueurQuiAPoseReseau = -1;
-let confirmationsFinManche = 0;
-let penalitesCumuleesManche = {};
-let dernierTimestampAction = 0;
 
 function afficherMenuMulti() {
     const multiPanel = document.getElementById('multi-panel');
@@ -63,9 +60,6 @@ function reinitialiserVariablePartie() {
     monIndexReseau = 0;
     indexJoueurActuelReseau = 0;
     indexJoueurQuiAPoseReseau = -1;
-    confirmationsFinManche = 0;
-    penalitesCumuleesManche = {};
-    dernierTimestampAction = 0;
     
     if (typeof bots !== 'undefined') bots.forEach(b => b.score = 0);
     
@@ -107,7 +101,7 @@ function retourAccueil() {
 }
 
 // ==========================================
-// 2. DECK ET COMBINAISONS
+// 2. GENERATION DECK & REGLES
 // ==========================================
 function genererDeck() {
     let deck = [];
@@ -257,7 +251,11 @@ function mettreAJourStatutTour() {
         status.innerText = monTour ? `[Manche ${mancheActuelle}/11] C'est VOTRE tour !` : `[Manche ${mancheActuelle}/11] Tour des bots...`;
     } else {
         let joueurNom = joueursReseau[indexJoueurActuelReseau] ? joueursReseau[indexJoueurActuelReseau].pseudo : "un joueur";
-        status.innerText = monTour ? `[Manche ${mancheActuelle}/11] C'est VOTRE tour !` : `[Manche ${mancheActuelle}/11] Tour de ${joueurNom}...`;
+        if (estDernierTour) {
+            status.innerText = monTour ? `⚠️ [DERNIER TOUR] C'est VOTRE tour !` : `⚠️ [DERNIER TOUR] Tour de ${joueurNom}...`;
+        } else {
+            status.innerText = monTour ? `[Manche ${mancheActuelle}/11] C'est VOTRE tour !` : `[Manche ${mancheActuelle}/11] Tour de ${joueurNom}...`;
+        }
     }
 }
 
@@ -330,10 +328,9 @@ function actionPiocher() {
     aPioche = true;
     piocheDepuisDefausse = false; 
     afficherMain();
-    afficherDefausse();
 
     if (modeJeu === "MULTI") {
-        envoyerActionReseau('ACTION_PIOCHE_PIOCHE', { indexJoueur: monIndexReseau });
+        miseAJourActionReseau();
     }
 }
 
@@ -351,7 +348,7 @@ function actionPiocherDefausse() {
         return;
     }
 
-    let confirmation = confirm("Règle : Vous ne pouvez piocher dans la défausse QUE si vous posez TOUTE votre main ce tour-ci. Voulez-vous continuer ?");
+    let confirmation = confirm("Règle : Vous ne pouvez piocher dans la défausse QUE si vous posez TOUTE votre main ce tour-ci.");
     if (!confirmation) return;
 
     let cartePrelee = defausse.pop();
@@ -363,7 +360,7 @@ function actionPiocherDefausse() {
     afficherDefausse();
 
     if (modeJeu === "MULTI") {
-        envoyerActionReseau('ACTION_PIOCHE_DEFAUSSE', { indexJoueur: monIndexReseau });
+        miseAJourActionReseau();
     }
 }
 
@@ -375,7 +372,10 @@ function annulerPiocheDefausse() {
         piocheDepuisDefausse = false;
         afficherMain();
         afficherDefausse();
-        alert("Pioche défausse annulée !");
+        
+        if (modeJeu === "MULTI") {
+            miseAJourActionReseau();
+        }
     }
 }
 
@@ -384,7 +384,7 @@ function actionTrierMain() {
         if (a.couleur !== b.couleur) {
             return COULEURS.indexOf(a.couleur) - COULEURS.indexOf(b.couleur);
         }
-        return obtenirValeurNumerique(a.valeur) - obtenirValeurNumerique(b.valeur);
+        return obtenirValeurNumerique(a.valeur) - obtenirValeurNumerique(a.valeur);
     });
     cartesSelectionnees = [];
     afficherMain();
@@ -435,7 +435,6 @@ function actionDefausserBouton() {
         return;
     }
 
-    // Auto-détection de pose complète
     if (groupesAposer.length > 0 && maMain.length === 1) {
         let tousValides = groupesAposer.every(g => validerCombinaison(g));
         if (tousValides) aPoseMaMain = true;
@@ -462,13 +461,11 @@ function actionDefausserBouton() {
 
     afficherMain();
     afficherDefausse();
-    mettreAJourStatutTour();
 
     if (modeJeu === "SOLO") {
         if (aPoseMaMain && !estDernierTour) {
             estDernierTour = true;
             indexJoueurQuiAPose = 0; 
-            alert("Vous avez posé toute votre main ! Les 3 bots jouent leur DERNIER TOUR.");
             aPoseMaMain = false;
         }
         passerTourSuivantSolo();
@@ -476,19 +473,63 @@ function actionDefausserBouton() {
     }
 
     // MULTIJOUEUR
-    let premierPoseSignal = false;
+    let aPoseCeTour = false;
     if (aPoseMaMain) {
-        premierPoseSignal = true;
+        aPoseCeTour = true;
         aPoseMaMain = false;
     }
 
-    envoyerActionReseau('ACTION_DEFAUSSER', {
-        indexJoueur: monIndexReseau,
-        carteDefaussee: carteDefaussee,
-        premierPose: premierPoseSignal,
-        groupesPosees: groupesAposer,
-        penalites: estDernierTour ? calculerPointsMain(maMain) : null
-    });
+    if (!estDernierTour && aPoseCeTour) {
+        estDernierTour = true;
+        indexJoueurQuiAPoseReseau = monIndexReseau;
+    }
+
+    // Calcul pénalités si fin de tour en dernier tour
+    let mesPenalites = estDernierTour ? calculerPointsMain(maMain) : 0;
+
+    // Passer au joueur suivant
+    let suivantIndex = (indexJoueurActuelReseau + 1) % joueursReseau.length;
+
+    // Vérification de la fin de la manche (si le tour revient à celui qui a posé)
+    let finMancheAtteinte = (estDernierTour && suivantIndex === indexJoueurQuiAPoseReseau);
+
+    if (finMancheAtteinte) {
+        // Appliquer les scores pour tout le monde
+        joueursReseau[monIndexReseau].score += mesPenalites;
+    }
+
+    let mainsMaj = {};
+    mainsJoueursGlobales[monIndexReseau] = maMain;
+
+    let nouvelEtat = {
+        mancheActuelle: mancheActuelle,
+        pioche: pioche,
+        defausse: defausse,
+        mains: mainsJoueursGlobales,
+        indexActuel: finMancheAtteinte ? indexJoueurQuiAPoseReseau : suivantIndex,
+        estDernierTour: estDernierTour,
+        indexQuiAPose: indexJoueurQuiAPoseReseau,
+        joueurs: joueursReseau,
+        finDeManche: finMancheAtteinte
+    };
+
+    envoyerEtatJeuFirebase(nouvelEtat);
+}
+
+function miseAJourActionReseau() {
+    mainsJoueursGlobales[monIndexReseau] = maMain;
+    let nouvelEtat = {
+        mancheActuelle: mancheActuelle,
+        pioche: pioche,
+        defausse: defausse,
+        mains: mainsJoueursGlobales,
+        indexActuel: indexJoueurActuelReseau,
+        estDernierTour: estDernierTour,
+        indexQuiAPose: indexJoueurQuiAPoseReseau,
+        joueurs: joueursReseau,
+        finDeManche: false
+    };
+    envoyerEtatJeuFirebase(nouvelEtat);
 }
 
 function calculerPointsMain(main) {
@@ -505,15 +546,16 @@ function calculerPointsMain(main) {
 }
 
 // ==========================================
-// 5. SYNCHRONISATION MULTIJOUEUR (FIREBASE)
+// 5. SYNCHRONISATION EN TEMPS REEL (FIREBASE)
 // ==========================================
+let mainsJoueursGlobales = {};
+
 function preparerTableauScoresUI() {
     const headerTr = document.getElementById('score-header');
     const footerTr = document.getElementById('score-footer');
     const tbody = document.getElementById('lignes-scores');
 
     if (!headerTr || !footerTr || !tbody) return;
-    tbody.innerHTML = '';
 
     if (modeJeu === "SOLO") {
         headerTr.innerHTML = `<th>Manche</th><th>${monPseudo}</th><th>${bots[0].nom}</th><th>${bots[1].nom}</th><th>${bots[2].nom}</th>`;
@@ -530,165 +572,80 @@ function preparerTableauScoresUI() {
     }
 }
 
-function mettreAJourLigneScoresMultiUI(manche, tableauPenalites) {
-    const tbody = document.getElementById('lignes-scores');
-    if (!tbody) return;
-
-    const tr = document.createElement('tr');
-    let ligne = `<td>M${manche} (${manche + 2}c)</td>`;
-    
-    joueursReseau.forEach((j) => {
-        let ptsPen = tableauPenalites[j.index] || 0;
-        ligne += `<td>${ptsPen} pts</td>`;
-        let thTotal = document.getElementById(`total-multi-${j.index}`);
-        if (thTotal) thTotal.innerText = `${j.score} pts`;
-    });
-
-    tr.innerHTML = ligne;
-    tbody.appendChild(tr);
-}
-
 function demarrerMancheReseau() {
     modeJeu = "MULTI";
     pioche = melanger(genererDeck());
     let nbCartes = mancheActuelle + 2;
-    let mainsJoueurs = {};
+    mainsJoueursGlobales = {};
 
     joueursReseau.forEach(j => {
         let mainJ = [];
         for (let i = 0; i < nbCartes; i++) {
             mainJ.push(pioche.pop());
         }
-        mainsJoueurs[j.index] = mainJ;
+        mainsJoueursGlobales[j.index] = mainJ;
     });
 
     defausse = [pioche.pop()];
-    indexJoueurActuelReseau = 0;
-    indexJoueurQuiAPoseReseau = -1;
-    estDernierTour = false;
 
-    envoyerActionReseau('DEBUT_MANCHE', {
+    let etatInitial = {
         mancheActuelle: mancheActuelle,
         pioche: pioche,
         defausse: defausse,
-        mains: mainsJoueurs,
-        joueursReseau: joueursReseau
-    });
+        mains: mainsJoueursGlobales,
+        indexActuel: 0,
+        estDernierTour: false,
+        indexQuiAPose: -1,
+        joueurs: joueursReseau,
+        finDeManche: false
+    };
+
+    envoyerEtatJeuFirebase(etatInitial);
 }
 
-function recevoirActionReseau(action) {
-    if (!action || action.timestamp <= dernierTimestampAction) return;
-    dernierTimestampAction = action.timestamp;
+function synchroniserEtatJeu(state, confirmations) {
+    if (!state) return;
 
-    let donnees = action;
+    mancheActuelle = state.mancheActuelle;
+    pioche = state.pioche || [];
+    defausse = state.defausse || [];
+    mainsJoueursGlobales = state.mains || {};
+    joueursReseau = state.joueurs || [];
+    indexJoueurActuelReseau = state.indexActuel;
+    estDernierTour = state.estDernierTour;
+    indexJoueurQuiAPoseReseau = state.indexQuiAPose;
 
-    if (donnees.type === 'DEBUT_MANCHE') {
-        modeJeu = "MULTI";
-        mancheActuelle = donnees.contenu.mancheActuelle;
-        pioche = donnees.contenu.pioche;
-        defausse = donnees.contenu.defausse;
-        joueursReseau = donnees.contenu.joueursReseau;
+    maMain = mainsJoueursGlobales[monIndexReseau] || [];
+    monTour = (monIndexReseau === indexJoueurActuelReseau);
 
-        let pTrouve = joueursReseau.find(j => j.pseudo === monPseudo);
-        if (pTrouve) monIndexReseau = pTrouve.index;
+    preparerTableauScoresUI();
+    afficherMain();
+    afficherDefausse();
+    afficherGroupesAPoser();
+    mettreAJourListeJoueursMultiUI();
+    mettreAJourStatutTour();
 
-        maMain = donnees.contenu.mains[monIndexReseau] || [];
-        indexJoueurActuelReseau = 0;
-        monTour = (monIndexReseau === 0);
-        aPioche = false;
-        aPoseMaMain = false;
-        estDernierTour = false;
-        piocheDepuisDefausse = false;
-        cartesSelectionnees = [];
-        groupesAposer = [];
+    // FIN DE MANCHE
+    if (state.finDeManche) {
+        let nbConf = confirmations ? Object.keys(confirmations).length : 0;
+        document.getElementById('status-message').innerText = `🏁 Fin de la manche ${mancheActuelle} ! Joueurs prêts : ${nbConf}/${joueursReseau.length}`;
 
-        preparerTableauScoresUI();
-        demarrerJeuUI();
-        afficherMain();
-        afficherDefausse();
-        afficherGroupesAPoser();
-        mettreAJourListeJoueursMultiUI();
-        mettreAJourStatutTour();
-    }
-    else if (donnees.type === 'ACTION_PIOCHE_PIOCHE') {
-        pioche.pop();
-    }
-    else if (donnees.type === 'ACTION_PIOCHE_DEFAUSSE') {
-        defausse.pop();
-        afficherDefausse();
-    }
-    else if (donnees.type === 'ACTION_DEFAUSSER') {
-        if (donnees.contenu.carteDefaussee) {
-            defausse.push(donnees.contenu.carteDefaussee);
-            afficherDefausse();
-        }
-
-        if (donnees.contenu.premierPose) {
-            estDernierTour = true;
-            indexJoueurQuiAPoseReseau = donnees.contenu.indexJoueur;
-            let nomPoseur = joueursReseau[indexJoueurQuiAPoseReseau] ? joueursReseau[indexJoueurQuiAPoseReseau].pseudo : "Un joueur";
-            alert(`⚠️ ${nomPoseur} a posé toute sa main ! C'est le DERNIER TOUR !`);
-        }
-
-        if (estDernierTour && donnees.contenu.penalites !== null) {
-            penalitesCumuleesManche[donnees.contenu.indexJoueur] = donnees.contenu.penalites;
-        }
-
-        indexJoueurActuelReseau = (indexJoueurActuelReseau + 1) % joueursReseau.length;
-
-        if (estDernierTour && indexJoueurActuelReseau === indexJoueurQuiAPoseReseau) {
-            if (estHote) calculerEtEnvoyerFinMancheMulti();
-            return;
-        }
-
-        monTour = (monIndexReseau === indexJoueurActuelReseau);
-        mettreAJourListeJoueursMultiUI();
-        mettreAJourStatutTour();
-    }
-    else if (donnees.type === 'FIN_MANCHE_BILAN') {
-        let tableauPenalites = donnees.contenu.penalitesTableau;
-        joueursReseau = donnees.contenu.joueursMiseAJour;
-        
-        let mesPts = tableauPenalites[monIndexReseau] || 0;
-        let monJoueur = joueursReseau.find(j => j.index === monIndexReseau);
-        let monScoreTotal = monJoueur ? monJoueur.score : 0;
-
-        mettreAJourLigneScoresMultiUI(mancheActuelle, tableauPenalites);
-
-        alert(`--- FIN DE LA MANCHE ${mancheActuelle} ---\n\nVous écopez de +${mesPts} pts de pénalité.\nTotal : ${monScoreTotal} pts.\n\nCliquez sur OK pour être prêt pour la manche suivante !`);
-
-        envoyerActionReseau('CONFIRMATION_JOUEUR_OK', { indexJoueur: monIndexReseau });
-    }
-    else if (donnees.type === 'CONFIRMATION_JOUEUR_OK' && estHote) {
-        confirmationsFinManche++;
-        if (confirmationsFinManche >= joueursReseau.length) {
-            confirmationsFinManche = 0;
+        // Si tout le monde a validé sa fin de manche
+        if (estHote && nbConf >= joueursReseau.length) {
             mancheActuelle++;
             if (mancheActuelle > 11) {
-                alert("🎮 PARTIE TERMINÉE !");
+                alert("🏆 PARTIE TERMINÉE !");
             } else {
+                // Effacer les confirmations et lancer la manche suivante
+                roomRef.child('confirmations').remove();
                 demarrerMancheReseau();
             }
         }
     }
 }
 
-function calculerEtEnvoyerFinMancheMulti() {
-    if (penalitesCumuleesManche[monIndexReseau] === undefined) {
-        penalitesCumuleesManche[monIndexReseau] = (indexJoueurQuiAPoseReseau === monIndexReseau) ? 0 : calculerPointsMain(maMain);
-    }
-
-    joueursReseau.forEach(j => {
-        let pen = penalitesCumuleesManche[j.index] || 0;
-        j.score += pen;
-    });
-
-    envoyerActionReseau('FIN_MANCHE_BILAN', {
-        penalitesTableau: penalitesCumuleesManche,
-        joueursMiseAJour: joueursReseau
-    });
-
-    confirmationsFinManche = 1; 
+function validerFinMancheBouton() {
+    envoyerConfirmationJoueur(monIndexReseau);
 }
 
 function mettreAJourListeJoueursMultiUI() {
@@ -700,13 +657,13 @@ function mettreAJourListeJoueursMultiUI() {
         const div = document.createElement('div');
         div.className = 'player-card' + (j.index === indexJoueurActuelReseau ? ' active-turn' : '');
         let roleText = j.index === monIndexReseau ? ' (Vous)' : '';
-        div.innerHTML = `<b>${j.pseudo}${roleText}</b>`;
+        div.innerHTML = `<b>${j.pseudo}${roleText} - ${j.score || 0} pts</b>`;
         container.appendChild(div);
     });
 }
 
 // ==========================================
-// 6. GESTION DU MODE SOLO (CONTRE 3 BOTS)
+// 6. MODE SOLO (CONTRE 3 BOTS)
 // ==========================================
 let bots = [
     { id: 1, nom: "Bot 1", main: [], score: 0 },
@@ -780,7 +737,6 @@ function jouerTourBot(bot) {
         if (!estDernierTour && bot.main.length <= 3 && Math.random() < 0.5) {
             estDernierTour = true;
             indexJoueurQuiAPose = indexJoueurActuel;
-            alert(`⚠️ ${bot.nom} a posé toute sa main ! C'est le DERNIER TOUR pour tout le monde !`);
         }
 
         passerTourSuivantSolo();
@@ -835,14 +791,6 @@ function finirMancheSolo() {
     bots[1].score += penBot2;
     bots[2].score += penBot3;
 
-    let rekapScores = `--- FIN DE LA MANCHE ${mancheActuelle} ---\n\n`;
-    rekapScores += `- ${monPseudo} : +${penHumain} pts (Total: ${scoreJoueur} pts)\n`;
-    rekapScores += `- ${bots[0].nom} : +${penBot1} pts (Total: ${bots[0].score} pts)\n`;
-    rekapScores += `- ${bots[1].nom} : +${penBot2} pts (Total: ${bots[1].score} pts)\n`;
-    rekapScores += `- ${bots[2].nom} : +${penBot3} pts (Total: ${bots[2].score} pts)\n`;
-
-    alert(rekapScores);
-
     ajouterLigneScoreSolo(mancheActuelle, penHumain, penBot1, penBot2, penBot3);
 
     mancheActuelle++;
@@ -850,7 +798,6 @@ function finirMancheSolo() {
         alert("🎮 PARTIE SOLO TERMINÉE ! Les 11 manches ont été jouées.");
         document.getElementById('status-message').innerText = "🏆 Partie terminée !";
     } else {
-        alert(`Début de la Manche ${mancheActuelle} (${mancheActuelle + 2} cartes) !`);
         initialiserPartieSolo();
     }
 }
