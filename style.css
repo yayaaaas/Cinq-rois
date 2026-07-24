@@ -275,6 +275,19 @@ tfoot {
    ADAPTATION MOBILE & SMARTPHONE (< 850px)
    ========================================== */
 @media screen and (max-width: 850px) {
+    
+    /* 📌 Fixe le bandeau d'en-tête (Nav + Statut) en haut de l'écran */
+    #mobile-header-fixed {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background-color: #2c3e50; /* Couleur de fond pour éviter la transparence au swipe */
+        padding-top: 5px;
+        padding-bottom: 5px;
+        border-bottom: 2px solid #f1c40f;
+        margin-bottom: 10px;
+    }
+
     #game-container {
         display: flex;
         flex-direction: column;
@@ -295,8 +308,10 @@ tfoot {
         border-radius: 20px;
         padding: 6px 16px;
         font-size: 13px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
 
+    /* Réduction de la taille des cartes sur mobile */
     .card, .card-slot {
         width: 60px;
         height: 90px;
@@ -308,7 +323,7 @@ tfoot {
         font-size: 16px !important;
     }
 
-    /* Modales de Scores et Joueurs sur mobile */
+    /* Fenêtres Pop-up modales (Scores et Joueurs) */
     .modal-panel {
         display: none;
         position: fixed;
