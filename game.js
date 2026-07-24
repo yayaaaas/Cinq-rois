@@ -53,6 +53,9 @@ function demarrerJeuUI() {
 
     const tableauPose = document.getElementById('tableau-pose');
     if (tableauPose) tableauPose.style.display = '';
+
+    const btnHome = document.getElementById('btn-home');
+    if (btnHome) btnHome.style.display = 'inline-block';
 }
 
 function reinitialiserVariablePartie() {
@@ -81,6 +84,7 @@ function reinitialiserVariablePartie() {
     const tbody = document.getElementById('lignes-scores');
     if (tbody) tbody.innerHTML = '';
 
+    afficherGroupesAPoser();
     fermerModal('modal-fin-manche');
 }
 
@@ -99,6 +103,9 @@ function retourAccueil() {
 
     document.getElementById('game-zone').style.display = 'none';
     document.getElementById('main-menu').style.display = 'block';
+
+    const btnHome = document.getElementById('btn-home');
+    if (btnHome) btnHome.style.display = 'none';
 
     const multiPanel = document.getElementById('multi-panel');
     if (multiPanel) multiPanel.style.display = 'none';
@@ -568,9 +575,8 @@ function calculerPointsMain(main) {
 function preparerTableauScoresUI() {
     const headerTr = document.getElementById('score-header');
     const footerTr = document.getElementById('score-footer');
-    const tbody = document.getElementById('lignes-scores');
 
-    if (!headerTr || !footerTr || !tbody) return;
+    if (!headerTr || !footerTr) return;
 
     if (modeJeu === "SOLO") {
         headerTr.innerHTML = `<th>Manche</th><th>${monPseudo}</th><th>${bots[0].nom}</th><th>${bots[1].nom}</th><th>${bots[2].nom}</th>`;
@@ -595,6 +601,7 @@ function demarrerMancheReseau() {
     let nbCartes = mancheActuelle + 2;
     mainsJoueursGlobales = {};
     penalitesCumulees = {};
+    groupesAposer = []; // Nettoyage de la zone de pose
 
     joueursReseau.forEach(j => {
         let mainJ = [];
@@ -619,7 +626,6 @@ function demarrerMancheReseau() {
         finDeManche: false
     };
 
-    // Vider explicitement les confirmations précédentes
     if (roomRef) roomRef.child('confirmations').remove();
     envoyerEtatJeuFirebase(etatInitial);
 }
@@ -627,6 +633,7 @@ function demarrerMancheReseau() {
 function synchroniserEtatJeu(state, confirmations) {
     if (!state) return;
 
+    let ancienneManche = mancheActuelle;
     mancheActuelle = state.mancheActuelle;
     pioche = state.pioche || [];
     defausse = state.defausse || [];
@@ -636,6 +643,11 @@ function synchroniserEtatJeu(state, confirmations) {
     estDernierTour = state.estDernierTour;
     indexJoueurQuiAPoseReseau = state.indexQuiAPose;
     penalitesCumulees = state.penalites || {};
+
+    // Vider les combinaisons à chaque nouvelle manche
+    if (mancheActuelle !== ancienneManche) {
+        groupesAposer = [];
+    }
 
     maMain = mainsJoueursGlobales[monIndexReseau] || [];
     monTour = (monIndexReseau === indexJoueurActuelReseau);
@@ -761,7 +773,7 @@ function initialiserPartieSolo() {
     defausse = [pioche.pop()];
     aPoseMaMain = false;
     estDernierTour = false;
-    groupesAposer = [];
+    groupesAposer = []; // Reinitialisation explicite des combinaisons
     cartesSelectionnees = [];
     aPioche = false;
 
@@ -778,7 +790,7 @@ function initialiserPartieSolo() {
     preparerTableauScoresUI();
     afficherMain();
     afficherDefausse();
-    afficherGroupesAPoser();
+    afficherGroupesAPoser(); // Nettoie le tapis de jeu
     mettreAJourListeJoueursUI();
     mettreAJourStatutTour();
 
@@ -878,7 +890,6 @@ function finirMancheSolo() {
 
     ajouterLigneScoreSolo(mancheActuelle, penHumain, penBot1, penBot2, penBot3);
 
-    // Bilan pop-up pour le Solo
     let recapHTML = `<h3>🏁 Fin de la Manche ${mancheActuelle} !</h3><b>Récapitulatif des pénalités :</b><br><br>`;
     recapHTML += `• <b>${monPseudo}</b> : +${penHumain} pts (Total: ${scoreJoueur} pts)<br>`;
     recapHTML += `• <b>${bots[0].nom}</b> : +${penBot1} pts (Total: ${bots[0].score} pts)<br>`;
