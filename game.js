@@ -61,7 +61,6 @@ function demarrerJeuUI() {
 function reinitialiserVariablePartie() {
     mancheActuelle = 1;
     scoreJoueur = 0;
-    scoreAdversaire = 0;
     joueursReseau = [];
     monIndexReseau = 0;
     indexJoueurActuelReseau = 0;
@@ -83,7 +82,6 @@ function reinitialiserVariablePartie() {
     aPioche = false;
     piocheDepuisDefausse = false;
 
-    // Vider les lignes HTML du tableau des scores
     const tbody = document.getElementById('lignes-scores');
     if (tbody) tbody.innerHTML = '';
 }
@@ -562,7 +560,13 @@ function actionDefausserBouton() {
         if (modeJeu === "SOLO") {
             passerTourSuivantSolo();
         } else {
-            passerTourSuivantMulti();
+            envoyerActionReseau('ACTION_DEFAUSSER', {
+                indexJoueur: monIndexReseau,
+                carteDefaussee: null,
+                premierPose: false,
+                groupesPosees: groupesAposer,
+                penalites: 0
+            });
         }
         return;
     }
@@ -690,12 +694,11 @@ function mettreAJourLigneScoresMultiUI(manche, tableauPenalites) {
 }
 
 function demarrerMancheReseau() {
-    modeJeu = "MULTI"; // Force le mode multijoueur
+    modeJeu = "MULTI";
     pioche = melanger(genererDeck());
     let nbCartes = mancheActuelle + 2;
     let mainsJoueurs = {};
 
-    // Distribution des mains pour chaque joueur connecté
     joueursReseau.forEach(j => {
         let mainJ = [];
         for (let i = 0; i < nbCartes; i++) {
@@ -705,11 +708,11 @@ function demarrerMancheReseau() {
     });
 
     defausse = [pioche.pop()];
-    indexJoueurActuelReseau = 0; // L'hôte (index 0) commence toujours la manche
+    indexJoueurActuelReseau = 0;
     indexJoueurQuiAPoseReseau = -1;
     estDernierTour = false;
 
-    // --- INITIALISATION LOCALE POUR L'HÔTE (Index 0) ---
+    // Initialisation locale Hôte
     monIndexReseau = 0;
     maMain = mainsJoueurs[0] || [];
     monTour = true;
@@ -719,7 +722,6 @@ function demarrerMancheReseau() {
     cartesSelectionnees = [];
     groupesAposer = [];
 
-    // Affichage de l'interface de l'Hôte
     afficherMain();
     afficherDefausse();
     afficherGroupesAPoser();
@@ -729,7 +731,6 @@ function demarrerMancheReseau() {
     const zoneAdv = document.getElementById('tableau-adversaire');
     if (zoneAdv) zoneAdv.style.display = 'none';
 
-    // Envoi des données de la manche à tous les invités
     envoyerActionReseau('DEBUT_MANCHE', {
         mancheActuelle: mancheActuelle,
         pioche: pioche,
@@ -740,9 +741,24 @@ function demarrerMancheReseau() {
 }
 
 function recevoirActionReseau(donnees, connectionSource) {
+    // Relais de l'Hôte vers tous les autres invités connected
+    if (estHote && donnees.type !== 'JOUEUR_PRET' && donnees.type !== 'CONFIRMATION_JOUEUR_OK') {
+        if (typeof conns !== 'undefined') {
+            conns.forEach(c => {
+                if (c !== connectionSource && c.open) {
+                    c.send(donnees);
+                }
+            });
+        }
+    }
+
     if (donnees.type === 'JOUEUR_PRET' && estHote) {
-        let nvlIndex = joueursReseau.length;
-        joueursReseau.push({ index: nvlIndex, pseudo: donnees.contenu.pseudo, score: 0 });
+        // Sécurité anti-doublon
+        let existeDeja = joueursReseau.some(j => j.pseudo === donnees.contenu.pseudo);
+        if (!existeDeja) {
+            let nvlIndex = joueursReseau.length;
+            joueursReseau.push({ index: nvlIndex, pseudo: donnees.contenu.pseudo, score: 0 });
+        }
 
         if (joueursReseau.length === nbJoueursAttendus) {
             preparerTableauScoresUI();
@@ -759,7 +775,6 @@ function recevoirActionReseau(donnees, connectionSource) {
         defausse = donnees.contenu.defausse;
         joueursReseau = donnees.contenu.joueursReseau;
 
-        // Trouver son index
         let pTrouve = joueursReseau.find(j => j.pseudo === monPseudo);
         if (pTrouve) monIndexReseau = pTrouve.index;
 
@@ -789,8 +804,10 @@ function recevoirActionReseau(donnees, connectionSource) {
         afficherDefausse();
     }
     else if (donnees.type === 'ACTION_DEFAUSSER') {
-        defausse.push(donnees.contenu.carteDefaussee);
-        afficherDefausse();
+        if (donnees.contenu.carteDefaussee) {
+            defausse.push(donnees.contenu.carteDefaussee);
+            afficherDefausse();
+        }
 
         if (donnees.contenu.premierPose) {
             estDernierTour = true;
@@ -803,10 +820,8 @@ function recevoirActionReseau(donnees, connectionSource) {
             penalitesCumuleesManche[donnees.contenu.indexJoueur] = donnees.contenu.penalites;
         }
 
-        // Relayer le tour au suivant
         indexJoueurActuelReseau = (indexJoueurActuelReseau + 1) % joueursReseau.length;
 
-        // Si boucle bouclée après le dernier tour
         if (estDernierTour && indexJoueurActuelReseau === indexJoueurQuiAPoseReseau) {
             if (estHote) {
                 calculerEtEnvoyerFinMancheMulti();
@@ -823,7 +838,8 @@ function recevoirActionReseau(donnees, connectionSource) {
         joueursReseau = donnees.contenu.joueursMiseAJour;
         
         let mesPts = tableauPenalites[monIndexReseau] || 0;
-        let monScoreTotal = joueursReseau.find(j => j.index === monIndexReseau).score;
+        let monJoueur = joueursReseau.find(j => j.index === monIndexReseau);
+        let monScoreTotal = monJoueur ? monJoueur.score : 0;
 
         mettreAJourLigneScoresMultiUI(mancheActuelle, tableauPenalites);
 
@@ -846,7 +862,6 @@ function recevoirActionReseau(donnees, connectionSource) {
 }
 
 function calculerEtEnvoyerFinMancheMulti() {
-    // Calculer la pénalité de l'hôte s'il n'a pas posé
     if (penalitesCumuleesManche[monIndexReseau] === undefined) {
         penalitesCumuleesManche[monIndexReseau] = (indexJoueurQuiAPoseReseau === monIndexReseau) ? 0 : calculerPointsMain(maMain);
     }
@@ -861,7 +876,6 @@ function calculerEtEnvoyerFinMancheMulti() {
         joueursMiseAJour: joueursReseau
     });
 
-    // L'hôte compte sa propre confirmation
     confirmationsFinManche = 1; 
 }
 
@@ -984,13 +998,6 @@ function passerTourSuivantSolo() {
         monTour = false;
         jouerTourBot(joueurActuel.botData);
     }
-}
-
-function passerTourSuivantMulti() {
-    indexJoueurActuelReseau = (indexJoueurActuelReseau + 1) % joueursReseau.length;
-    monTour = (monIndexReseau === indexJoueurActuelReseau);
-    mettreAJourListeJoueursMultiUI();
-    mettreAJourStatutTour();
 }
 
 function mettreAJourListeJoueursUI() {
