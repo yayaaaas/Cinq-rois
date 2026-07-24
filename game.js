@@ -5,7 +5,6 @@ const COULEURS = ['coeur', 'carreau', 'trefle', 'pique', 'etoile'];
 const VALEURS = ['3', '4', '5', '6', '7', '8', '9', '10', 'V', 'D', 'R'];
 
 let monPseudo = "Joueur 1";
-let pseudoAdversaire = "Adversaire";
 let modeJeu = "MULTI"; // "SOLO" ou "MULTI"
 
 let pioche = [];
@@ -24,7 +23,14 @@ let aPoseMaMain = false;
 let piocheDepuisDefausse = false;
 
 let scoreJoueur = 0;
-let scoreAdversaire = 0;
+
+// Variables Multijoueur
+let joueursReseau = []; // Liste de { index, pseudo, score }
+let monIndexReseau = 0;
+let indexJoueurActuelReseau = 0;
+let indexJoueurQuiAPoseReseau = -1;
+let confirmationsFinManche = 0;
+let penalitesCumuleesManche = {};
 
 function afficherMenuMulti() {
     const multiPanel = document.getElementById('multi-panel');
@@ -55,7 +61,6 @@ function demarrerJeuUI() {
 function reinitialiserVariablePartie() {
     mancheActuelle = 1;
     scoreJoueur = 0;
-    scoreAdversaire = 0;
     bots.forEach(b => b.score = 0);
     maMain = [];
     groupesAposer = [];
@@ -64,6 +69,8 @@ function reinitialiserVariablePartie() {
     estDernierTour = false;
     aPioche = false;
     piocheDepuisDefausse = false;
+    confirmationsFinManche = 0;
+    penalitesCumuleesManche = {};
 }
 
 function lancerModeSolo() {
@@ -238,8 +245,13 @@ function afficherDefausse() {
 
 function mettreAJourStatutTour() {
     const status = document.getElementById('status-message');
-    if (status) {
-        status.innerText = monTour ? `[Manche ${mancheActuelle}/11] C'est VOTRE tour de jouer !` : `[Manche ${mancheActuelle}/11] Tour de votre ADVERSAIRE...`;
+    if (!status) return;
+
+    if (modeJeu === "SOLO") {
+        status.innerText = monTour ? `[Manche ${mancheActuelle}/11] C'est VOTRE tour !` : `[Manche ${mancheActuelle}/11] Tour des bots...`;
+    } else {
+        let joueurNom = joueursReseau[indexJoueurActuelReseau] ? joueursReseau[indexJoueurActuelReseau].pseudo : "Adversaire";
+        status.innerText = monTour ? `[Manche ${mancheActuelle}/11] C'est VOTRE tour !` : `[Manche ${mancheActuelle}/11] Tour de ${joueurNom}...`;
     }
 }
 
@@ -267,7 +279,7 @@ function afficherGroupesAPoser() {
     });
 }
 
-function afficherPoseAdversaire(groupesAdverses) {
+function afficherPoseAdversaire(combinaisonsGlobales) {
     const zoneAdversaire = document.getElementById('tableau-adversaire');
     const container = document.getElementById('zones-combinaisons-adversaire');
     
@@ -276,27 +288,33 @@ function afficherPoseAdversaire(groupesAdverses) {
     zoneAdversaire.style.display = 'block';
     container.innerHTML = '';
 
-    groupesAdverses.forEach((groupe) => {
-        const divGroupe = document.createElement('div');
-        divGroupe.className = 'groupe-cartes';
-        
-        groupe.forEach(carte => {
-            const cardDiv = document.createElement('div');
-            cardDiv.classList.add('card', carte.couleur);
-            cardDiv.innerHTML = `
-                <div>${carte.valeur}</div>
-                <div style="font-size: 20px;">${obtenirSymbole(carte.couleur)}</div>
-                <div style="text-align: right;">${carte.valeur}</div>
-            `;
-            divGroupe.appendChild(cardDiv);
-        });
+    combinaisonsGlobales.forEach((poseJoueur) => {
+        const titre = document.createElement('h4');
+        titre.innerText = `Pose de ${poseJoueur.pseudo} :`;
+        container.appendChild(titre);
 
-        container.appendChild(divGroupe);
+        poseJoueur.groupes.forEach((groupe) => {
+            const divGroupe = document.createElement('div');
+            divGroupe.className = 'groupe-cartes';
+            
+            groupe.forEach(carte => {
+                const cardDiv = document.createElement('div');
+                cardDiv.classList.add('card', carte.couleur);
+                cardDiv.innerHTML = `
+                    <div>${carte.valeur}</div>
+                    <div style="font-size: 20px;">${obtenirSymbole(carte.couleur)}</div>
+                    <div style="text-align: right;">${carte.valeur}</div>
+                `;
+                divGroupe.appendChild(cardDiv);
+            });
+
+            container.appendChild(divGroupe);
+        });
     });
 }
 
 // ==========================================
-// 4. ACTIONS DU JOUEUR & GESTION DE MAIN
+// 4. ACTIONS DU JOUEUR & MAIN
 // ==========================================
 function verifierClicCarte(index) {
     if (cartesSelectionnees.includes(index)) {
@@ -340,13 +358,11 @@ function actionPiocher() {
             alert("Plus aucune carte disponible dans la pioche ni dans la défausse !");
             return;
         }
-        
         let carteSommet = defausse.pop();
         pioche = melanger(defausse);
         defausse = [carteSommet];
-        
         afficherDefausse();
-        alert("La pioche était vide : la défausse a été remélangée pour former une nouvelle pioche !");
+        alert("La pioche était vide : la défausse a été remélangée !");
     }
 
     let cartePiochee = pioche.pop();
@@ -357,7 +373,7 @@ function actionPiocher() {
     afficherDefausse();
 
     if (modeJeu === "MULTI") {
-        envoyerActionReseau('ACTION_PIOCHE_PIOCHE', {});
+        envoyerActionReseau('ACTION_PIOCHE_PIOCHE', { indexJoueur: monIndexReseau });
     }
 }
 
@@ -387,7 +403,7 @@ function actionPiocherDefausse() {
     afficherDefausse();
 
     if (modeJeu === "MULTI") {
-        envoyerActionReseau('ACTION_PIOCHE_DEFAUSSE', {});
+        envoyerActionReseau('ACTION_PIOCHE_DEFAUSSE', { indexJoueur: monIndexReseau });
     }
 }
 
@@ -415,7 +431,6 @@ function actionTrierMain() {
 }
 
 function creerNouveauGroupe() {
-    // RÈGLE : Durant les 3 premières manches, pas plus d'1 seule combinaison !
     if (mancheActuelle <= 3 && groupesAposer.length >= 1) {
         alert("⚠️ RÈGLE : Durant les 3 premières manches, vous ne pouvez poser qu'UNE SEULE combinaison !");
         return;
@@ -430,10 +445,8 @@ function creerNouveauGroupe() {
     
     if (estUneFamille(nouveauGroupe) || estUneSuite(nouveauGroupe)) {
         groupesAposer.push(nouveauGroupe);
-        
         maMain = maMain.filter((_, idx) => !cartesSelectionnees.includes(idx));
         cartesSelectionnees = [];
-        
         afficherMain();
         afficherGroupesAPoser();
     } else {
@@ -478,7 +491,7 @@ function validerEtPoserMain() {
 
     for (let i = 0; i < groupesAposer.length; i++) {
         if (!validerCombinaison(groupesAposer[i])) {
-            alert(`Le groupe ${i + 1} n'est pas une combinaison valide (suite ou brelan/carré) !`);
+            alert(`Le groupe ${i + 1} n'est pas une combinaison valide !`);
             return;
         }
     }
@@ -533,6 +546,8 @@ function actionDefausserBouton() {
     if (maMain.length === 0 && aPoseMaMain) {
         if (modeJeu === "SOLO") {
             passerTourSuivantSolo();
+        } else {
+            passerTourSuivantMulti();
         }
         return;
     }
@@ -542,18 +557,8 @@ function actionDefausserBouton() {
         return;
     }
 
-    let totalCartesGroupes = 0;
-    groupesAposer.forEach(g => totalCartesGroupes += g.length);
-
-    if (groupesAposer.length > 0 && maMain.length === 1) {
-        let tousValides = groupesAposer.every(g => validerCombinaison(g));
-        if (tousValides) {
-            aPoseMaMain = true; 
-        }
-    }
-
     if (piocheDepuisDefausse && !aPoseMaMain && !estDernierTour) {
-        alert("⚠️ RÈGLE : Vous avez pioché dans la défausse, vous êtes OBLIGÉ de poser toute votre main ce tour-ci ! Cliquez sur '+ Combinaison' ou vérifiez vos cartes.");
+        alert("⚠️ RÈGLE : Vous avez pioché dans la défausse, vous êtes OBLIGÉ de poser toute votre main ce tour-ci !");
         return;
     }
 
@@ -588,37 +593,20 @@ function actionDefausserBouton() {
         return;
     }
 
-    if (estDernierTour) {
-        let mesPenalites = calculerPointsMain(maMain);
-        scoreJoueur += mesPenalites;
-        
-        ajouterLigneScoreTableau(mancheActuelle, mesPenalites, 0);
-
-        alert(`Fin de la manche ${mancheActuelle} ! Vous écopez de ${mesPenalites} points de pénalité.`);
-        
-        envoyerActionReseau('FIN_MANCHE_SCORE', { 
-            penalites: mesPenalites,
-            carteDefaussee: carteDefaussee
-        });
-
-        if (estHote) {
-            setTimeout(() => {
-                passerMancheSuivante();
-            }, 1000);
-        }
-        return;
-    }
-
+    // MULTIJOUEUR
+    let premierPoseSignal = false;
     if (aPoseMaMain) {
-        alert("Main transmise ! L'adversaire joue son dernier tour.");
-        envoyerActionReseau('PREMIERE_POSE', { 
-            groupes: groupesAposer,
-            carteDefaussee: carteDefaussee 
-        });
+        premierPoseSignal = true;
         aPoseMaMain = false;
-    } else {
-        envoyerActionReseau('ACTION_DEFAUSSER', { carte: carteDefaussee });
     }
+
+    envoyerActionReseau('ACTION_DEFAUSSER', {
+        indexJoueur: monIndexReseau,
+        carteDefaussee: carteDefaussee,
+        premierPose: premierPoseSignal,
+        groupesPosees: groupesAposer,
+        penalites: estDernierTour ? calculerPointsMain(maMain) : null
+    });
 }
 
 function calculerPointsMain(main) {
@@ -642,7 +630,7 @@ function calculerPointsMain(main) {
 }
 
 // ==========================================
-// 5. GESTION DES SCORES ET DU RÉSEAU
+// 5. SCORES & RÉSEAU MULTIJOUEUR
 // ==========================================
 function preparerTableauScoresUI() {
     const headerTr = document.getElementById('score-header');
@@ -654,175 +642,105 @@ function preparerTableauScoresUI() {
     tbody.innerHTML = '';
 
     if (modeJeu === "SOLO") {
-        headerTr.innerHTML = `
-            <th>Manche</th>
-            <th>${monPseudo}</th>
-            <th>${bots[0].nom}</th>
-            <th>${bots[1].nom}</th>
-            <th>${bots[2].nom}</th>
-        `;
-
-        footerTr.innerHTML = `
-            <th>TOTAL</th>
-            <th id="total-joueur">0 pts</th>
-            <th id="total-bot-1">0 pts</th>
-            <th id="total-bot-2">0 pts</th>
-            <th id="total-bot-3">0 pts</th>
-        `;
+        headerTr.innerHTML = `<th>Manche</th><th>${monPseudo}</th><th>${bots[0].nom}</th><th>${bots[1].nom}</th><th>${bots[2].nom}</th>`;
+        footerTr.innerHTML = `<th>TOTAL</th><th id="total-joueur">0 pts</th><th id="total-bot-1">0 pts</th><th id="total-bot-2">0 pts</th><th id="total-bot-3">0 pts</th>`;
     } else {
-        headerTr.innerHTML = `
-            <th>Manche</th>
-            <th>${monPseudo}</th>
-            <th>${pseudoAdversaire}</th>
-        `;
-
-        footerTr.innerHTML = `
-            <th>TOTAL</th>
-            <th id="total-joueur">0 pts</th>
-            <th id="total-adversaire">0 pts</th>
-        `;
+        let cols = `<th>Manche</th>`;
+        let foot = `<th>TOTAL</th>`;
+        joueursReseau.forEach((j) => {
+            cols += `<th>${j.pseudo}</th>`;
+            foot += `<th id="total-multi-${j.index}">${j.score || 0} pts</th>`;
+        });
+        headerTr.innerHTML = cols;
+        footerTr.innerHTML = foot;
     }
 }
 
-function ajouterLigneScoreTableau(manche, penVous, penAdversaire) {
+function mettreAJourLigneScoresMultiUI(manche, tableauPenalites) {
     const tbody = document.getElementById('lignes-scores');
     if (!tbody) return;
 
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td>Manche ${manche}</td>
-        <td>${penVous} pts</td>
-        <td>${penAdversaire} pts</td>
-    `;
-    tbody.appendChild(tr);
-
-    const totJ = document.getElementById('total-joueur');
-    const totA = document.getElementById('total-adversaire');
-    if (totJ) totJ.innerText = `${scoreJoueur} pts`;
-    if (totA) totA.innerText = `${scoreAdversaire} pts`;
-}
-
-function ajouterLigneScoreSolo(manche, penHumain, penBot1, penBot2, penBot3) {
-    const tbody = document.getElementById('lignes-scores');
-    if (!tbody) return;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td>M${manche} (${manche + 2} cartes)</td>
-        <td>${penHumain} pts</td>
-        <td>${penBot1} pts</td>
-        <td>${penBot2} pts</td>
-        <td>${penBot3} pts</td>
-    `;
-    tbody.appendChild(tr);
-
-    const totJ = document.getElementById('total-joueur');
-    const totB1 = document.getElementById('total-bot-1');
-    const totB2 = document.getElementById('total-bot-2');
-    const totB3 = document.getElementById('total-bot-3');
-
-    if (totJ) totJ.innerText = `${scoreJoueur} pts`;
-    if (totB1) totB1.innerText = `${bots[0].score} pts`;
-    if (totB2) totB2.innerText = `${bots[1].score} pts`;
-    if (totB3) totB3.innerText = `${bots[2].score} pts`;
-}
-
-function passerMancheSuivante() {
-    mancheActuelle++;
+    let ligne = `<td>M${manche} (${manche + 2}c)</td>`;
     
-    if (mancheActuelle > 11) {
-        let gagnant = scoreJoueur < scoreAdversaire ? "VOUS AVEZ GAGNÉ !" : scoreJoueur > scoreAdversaire ? "L'ADVERSAIRE A GAGNÉ !" : "ÉGALITÉ PARFAITE !";
-        alert(`🏆 FIN DE LA PARTIE ! 🏆\n\nScore Final :\n- Vous : ${scoreJoueur} pts\n- Adversaire : ${scoreAdversaire} pts\n\nRésultat : ${gagnant}`);
-        document.getElementById('status-message').innerText = `🏆 Fin de partie ! ${gagnant}`;
-        return;
-    }
+    joueursReseau.forEach((j) => {
+        let ptsPen = tableauPenalites[j.index] || 0;
+        ligne += `<td>${ptsPen} pts</td>`;
+        let thTotal = document.getElementById(`total-multi-${j.index}`);
+        if (thTotal) thTotal.innerText = `${j.score} pts`;
+    });
 
-    if (estHote) {
-        initialiserPartieReseau();
-    }
+    tr.innerHTML = ligne;
+    tbody.appendChild(tr);
 }
 
-function initialiserPartieReseau() {
-    modeJeu = "MULTI";
-
-    if (mancheActuelle === 1) {
-        scoreJoueur = 0;
-        scoreAdversaire = 0;
-        preparerTableauScoresUI();
-    }
-
+function demarrerMancheReseau() {
     pioche = melanger(genererDeck());
-    let nbCartes = mancheActuelle + 2; 
-    
-    maMain = [];
-    let mainJoueur2 = [];
-    
-    for (let i = 0; i < nbCartes; i++) {
-        maMain.push(pioche.pop());
-        mainJoueur2.push(pioche.pop());
-    }
-    
+    let nbCartes = mancheActuelle + 2;
+    let mainsJoueurs = {};
+
+    joueursReseau.forEach(j => {
+        let mainJ = [];
+        for (let i = 0; i < nbCartes; i++) {
+            mainJ.push(pioche.pop());
+        }
+        mainsJoueurs[j.index] = mainJ;
+    });
+
     defausse = [pioche.pop()];
-    aPoseMaMain = false;
+    indexJoueurActuelReseau = 0;
+    indexJoueurQuiAPoseReseau = -1;
     estDernierTour = false;
-    piocheDepuisDefausse = false;
-    aPioche = false; 
-    monTour = true; 
-    groupesAposer = [];
-    cartesSelectionnees = [];
-    
-    afficherMain();
-    afficherDefausse();
-    afficherGroupesAPoser();
-    mettreAJourListeJoueursMultiUI();
 
-    const zoneAdv = document.getElementById('tableau-adversaire');
-    if (zoneAdv) zoneAdv.style.display = 'none';
-
-    mettreAJourStatutTour();
-
-    envoyerActionReseau('DEBUT_PARTIE', {
-        pioche: pioche,
-        mainJoueur2: mainJoueur2,
-        defausse: defausse,
+    envoyerActionReseau('DEBUT_MANCHE', {
         mancheActuelle: mancheActuelle,
-        pseudoHote: monPseudo
+        pioche: pioche,
+        defausse: defausse,
+        mains: mainsJoueurs,
+        joueursReseau: joueursReseau
     });
 }
 
-function recevoirActionReseau(donnees) {
+function recevoirActionReseau(donnees, connectionSource) {
     if (donnees.type === 'JOUEUR_PRET' && estHote) {
-        if (donnees.contenu.pseudo) pseudoAdversaire = donnees.contenu.pseudo;
-        preparerTableauScoresUI();
-        demarrerJeuUI(); 
-        document.getElementById('status-message').innerText = `${pseudoAdversaire} connecté ! C'est votre tour.`;
-        initialiserPartieReseau();
+        let nvlIndex = joueursReseau.length;
+        joueursReseau.push({ index: nvlIndex, pseudo: donnees.contenu.pseudo, score: 0 });
+
+        if (joueursReseau.length === nbJoueursAttendus) {
+            preparerTableauScoresUI();
+            demarrerJeuUI();
+            demarrerMancheReseau();
+        } else {
+            document.getElementById('status-message').innerText = `En attente des joueurs... (${joueursReseau.length}/${nbJoueursAttendus})`;
+        }
     }
-    else if (donnees.type === 'DEBUT_PARTIE') {
+    else if (donnees.type === 'DEBUT_MANCHE') {
         modeJeu = "MULTI";
-        if (donnees.contenu.pseudoHote) pseudoAdversaire = donnees.contenu.pseudoHote;
-        preparerTableauScoresUI();
-        
-        pioche = donnees.contenu.pioche;
-        maMain = donnees.contenu.mainJoueur2;
-        defausse = donnees.contenu.defausse;
         mancheActuelle = donnees.contenu.mancheActuelle;
-        monTour = false;
+        pioche = donnees.contenu.pioche;
+        defausse = donnees.contenu.defausse;
+        joueursReseau = donnees.contenu.joueursReseau;
+
+        // Trouver son index
+        let pTrouve = joueursReseau.find(j => j.pseudo === monPseudo);
+        if (pTrouve) monIndexReseau = pTrouve.index;
+
+        maMain = donnees.contenu.mains[monIndexReseau] || [];
+        indexJoueurActuelReseau = 0;
+        monTour = (monIndexReseau === 0);
         aPioche = false;
-        estDernierTour = false;
         aPoseMaMain = false;
+        estDernierTour = false;
         piocheDepuisDefausse = false;
-        
         cartesSelectionnees = [];
         groupesAposer = [];
+
+        preparerTableauScoresUI();
+        demarrerJeuUI();
         afficherMain();
         afficherDefausse();
         afficherGroupesAPoser();
         mettreAJourListeJoueursMultiUI();
-
-        const zoneAdv = document.getElementById('tableau-adversaire');
-        if (zoneAdv) zoneAdv.style.display = 'none';
-
         mettreAJourStatutTour();
     }
     else if (donnees.type === 'ACTION_PIOCHE_PIOCHE') {
@@ -833,45 +751,98 @@ function recevoirActionReseau(donnees) {
         afficherDefausse();
     }
     else if (donnees.type === 'ACTION_DEFAUSSER') {
-        defausse.push(donnees.contenu.carte);
-        afficherDefausse();
-        monTour = true;
-        mettreAJourStatutTour();
-    }
-    else if (donnees.type === 'PREMIERE_POSE') {
         defausse.push(donnees.contenu.carteDefaussee);
         afficherDefausse();
-        afficherPoseAdversaire(donnees.contenu.groupes);
-        
-        estDernierTour = true;
-        monTour = true;
-        
-        alert(`⚠️ ${pseudoAdversaire} a posé toute sa main ! C'est votre DERNIER TOUR !`);
-        document.getElementById('status-message').innerText = `⚠️ DERNIER TOUR ! Piochez, posez et défaussez.`;
-    }
-    else if (donnees.type === 'FIN_MANCHE_SCORE') {
-        if (donnees.contenu.carteDefaussee) {
-            defausse.push(donnees.contenu.carteDefaussee);
-            afficherDefausse();
+
+        if (donnees.contenu.premierPose) {
+            estDernierTour = true;
+            indexJoueurQuiAPoseReseau = donnees.contenu.indexJoueur;
+            let nomPoseur = joueursReseau[indexJoueurQuiAPoseReseau] ? joueursReseau[indexJoueurQuiAPoseReseau].pseudo : "Un joueur";
+            alert(`⚠️ ${nomPoseur} a posé toute sa main ! C'est le DERNIER TOUR !`);
         }
-        
-        let penAdversaireQuiAPerdu = donnees.contenu.penalites;
-        scoreAdversaire += penAdversaireQuiAPerdu;
 
-        ajouterLigneScoreTableau(mancheActuelle, 0, penAdversaireQuiAPerdu);
+        if (estDernierTour && donnees.contenu.penalites !== null) {
+            penalitesCumuleesManche[donnees.contenu.indexJoueur] = donnees.contenu.penalites;
+        }
 
-        alert(`Fin de la manche ${mancheActuelle} !\nScores cumulés -> Vous: ${scoreJoueur} pts | ${pseudoAdversaire}: ${scoreAdversaire} pts`);
+        // Relayer le tour au suivant
+        indexJoueurActuelReseau = (indexJoueurActuelReseau + 1) % joueursReseau.length;
+
+        // Si boucle bouclée après le dernier tour
+        if (estDernierTour && indexJoueurActuelReseau === indexJoueurQuiAPoseReseau) {
+            if (estHote) {
+                calculerEtEnvoyerFinMancheMulti();
+            }
+            return;
+        }
+
+        monTour = (monIndexReseau === indexJoueurActuelReseau);
+        mettreAJourListeJoueursMultiUI();
+        mettreAJourStatutTour();
+    }
+    else if (donnees.type === 'FIN_MANCHE_BILAN') {
+        let tableauPenalites = donnees.contenu.penalitesTableau;
+        joueursReseau = donnees.contenu.joueursMiseAJour;
         
-        if (estHote) {
-            setTimeout(() => {
-                passerMancheSuivante();
-            }, 1000);
+        let mesPts = tableauPenalites[monIndexReseau] || 0;
+        let monScoreTotal = joueursReseau.find(j => j.index === monIndexReseau).score;
+
+        mettreAJourLigneScoresMultiUI(mancheActuelle, tableauPenalites);
+
+        alert(`--- FIN DE LA MANCHE ${mancheActuelle} ---\n\nVous écopez de +${mesPts} pts de pénalité.\nTotal : ${monScoreTotal} pts.\n\nCliquez sur OK pour être prêt pour la manche suivante !`);
+
+        envoyerActionReseau('CONFIRMATION_JOUEUR_OK', { indexJoueur: monIndexReseau });
+    }
+    else if (donnees.type === 'CONFIRMATION_JOUEUR_OK' && estHote) {
+        confirmationsFinManche++;
+        if (confirmationsFinManche >= joueursReseau.length) {
+            confirmationsFinManche = 0;
+            mancheActuelle++;
+            if (mancheActuelle > 11) {
+                alert("🎮 PARTIE TERMINÉE !");
+            } else {
+                demarrerMancheReseau();
+            }
         }
     }
 }
 
+function calculerEtEnvoyerFinMancheMulti() {
+    // Calculer la pénalité de l'hôte s'il n'a pas posé
+    if (penalitesCumuleesManche[monIndexReseau] === undefined) {
+        penalitesCumuleesManche[monIndexReseau] = (indexJoueurQuiAPoseReseau === monIndexReseau) ? 0 : calculerPointsMain(maMain);
+    }
+
+    joueursReseau.forEach(j => {
+        let pen = penalitesCumuleesManche[j.index] || 0;
+        j.score += pen;
+    });
+
+    envoyerActionReseau('FIN_MANCHE_BILAN', {
+        penalitesTableau: penalitesCumuleesManche,
+        joueursMiseAJour: joueursReseau
+    });
+
+    // L'hôte compte sa propre confirmation
+    confirmationsFinManche = 1; 
+}
+
+function mettreAJourListeJoueursMultiUI() {
+    const container = document.getElementById('players-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    joueursReseau.forEach((j) => {
+        const div = document.createElement('div');
+        div.className = 'player-card' + (j.index === indexJoueurActuelReseau ? ' active-turn' : '');
+        let roleText = j.index === monIndexReseau ? ' (Vous)' : '';
+        div.innerHTML = `<b>${j.pseudo}${roleText}</b>`;
+        container.appendChild(div);
+    });
+}
+
 // ==========================================
-// 6. GESTION DU MODE SOLO & IA OPTIMISÉE
+// 6. GESTION DU MODE SOLO (CONTRE 3 BOTS)
 // ==========================================
 let bots = [
     { id: 1, nom: "Bot 1", main: [], score: 0 },
@@ -936,11 +907,10 @@ function jouerTourBot(bot) {
         let cartePiochee = pioche.pop();
         bot.main.push(cartePiochee);
 
-        // IA INTELLIGENTE : Trier pour garder atouts/jokers et jeter la plus grosse pénalité inutile
         bot.main.sort((a, b) => {
             let ptsA = estUnJokerOuAtout(a) ? 0 : obtenirValeurNumerique(a.valeur);
             let ptsB = estUnJokerOuAtout(b) ? 0 : obtenirValeurNumerique(b.valeur);
-            return ptsB - ptsA; // La plus forte valeur en premier
+            return ptsB - ptsA;
         });
 
         let carteDefaussee = bot.main.shift();
@@ -978,6 +948,13 @@ function passerTourSuivantSolo() {
     }
 }
 
+function passerTourSuivantMulti() {
+    indexJoueurActuelReseau = (indexJoueurActuelReseau + 1) % joueursReseau.length;
+    monTour = (monIndexReseau === indexJoueurActuelReseau);
+    mettreAJourListeJoueursMultiUI();
+    mettreAJourStatutTour();
+}
+
 function mettreAJourListeJoueursUI() {
     const container = document.getElementById('players-list');
     if (!container) return;
@@ -993,22 +970,6 @@ function mettreAJourListeJoueursUI() {
         div.innerHTML = `<b>${nomAffiche}</b>`;
         container.appendChild(div);
     });
-}
-
-function mettreAJourListeJoueursMultiUI() {
-    const container = document.getElementById('players-list');
-    if (!container) return;
-    container.innerHTML = '';
-
-    const divVous = document.createElement('div');
-    divVous.className = 'player-card' + (monTour ? ' active-turn' : '');
-    divVous.innerHTML = `<b>${monPseudo} (Vous)</b>`;
-    container.appendChild(divVous);
-
-    const divAdv = document.createElement('div');
-    divAdv.className = 'player-card' + (!monTour ? ' active-turn' : '');
-    divAdv.innerHTML = `<b>${pseudoAdversaire}</b>`;
-    container.appendChild(divAdv);
 }
 
 function finirMancheSolo() {
@@ -1041,6 +1002,31 @@ function finirMancheSolo() {
         alert(`Début de la Manche ${mancheActuelle} (${mancheActuelle + 2} cartes) !`);
         initialiserPartieSolo();
     }
+}
+
+function ajouterLigneScoreSolo(manche, penHumain, penBot1, penBot2, penBot3) {
+    const tbody = document.getElementById('lignes-scores');
+    if (!tbody) return;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>M${manche} (${manche + 2}c)</td>
+        <td>${penHumain} pts</td>
+        <td>${penBot1} pts</td>
+        <td>${penBot2} pts</td>
+        <td>${penBot3} pts</td>
+    `;
+    tbody.appendChild(tr);
+
+    const totJ = document.getElementById('total-joueur');
+    const totB1 = document.getElementById('total-bot-1');
+    const totB2 = document.getElementById('total-bot-2');
+    const totB3 = document.getElementById('total-bot-3');
+
+    if (totJ) totJ.innerText = `${scoreJoueur} pts`;
+    if (totB1) totB1.innerText = `${bots[0].score} pts`;
+    if (totB2) totB2.innerText = `${bots[1].score} pts`;
+    if (totB3) totB3.innerText = `${bots[2].score} pts`;
 }
 
 // ==========================================
