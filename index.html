@@ -97,6 +97,17 @@
                 <div id="players-list"></div>
             </div>
 
+            <div id="modal-fin-manche" class="game-panel modal-panel" style="text-align: center; padding: 20px;">
+                <div class="panel-header">
+                    <h2>🏁 Bilan de la Manche</h2>
+                </div>
+                <div id="recap-fin-manche-content" style="margin: 15px 0; font-size: 15px; line-height: 1.6;"></div>
+                <button id="btn-valider-fin-manche" onclick="validerFinMancheBouton()" style="background-color: #2ecc71; color: white; padding: 12px 24px; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;">
+                    👍 Prêt pour la manche suivante !
+                </button>
+                <p id="attente-joueurs-msg" style="margin-top: 15px; color: #f1c40f; font-weight: bold;"></p>
+            </div>
+
             <div id="player-zone" class="game-panel">
                 <div id="tableau-pose">
                     <h3>Vos Combinaisons (à poser)</h3>
