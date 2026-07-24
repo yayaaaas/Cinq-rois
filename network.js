@@ -4,7 +4,13 @@ var connHote = null; // Connexion vers l'hôte (pour les Invités)
 var nbJoueursAttendus = 2;
 
 function creerPartie() {
-    modeJeu = "MULTI"; // On bascule explicitement en mode Multijoueur
+    modeJeu = "MULTI";
+    
+    // Réinitialisation complète des données de jeu de la session précédente
+    if (typeof reinitialiserVariablePartie === 'function') {
+        reinitialiserVariablePartie();
+    }
+
     const nameInput = document.getElementById('player-name').value.trim();
     if (nameInput !== "") monPseudo = nameInput;
 
@@ -39,7 +45,13 @@ function creerPartie() {
 }
 
 function rejoindrePartie() {
-    modeJeu = "MULTI"; // On bascule explicitement en mode Multijoueur
+    modeJeu = "MULTI";
+
+    // Réinitialisation complète des données de jeu de la session précédente
+    if (typeof reinitialiserVariablePartie === 'function') {
+        reinitialiserVariablePartie();
+    }
+
     const nameInput = document.getElementById('player-name').value.trim();
     if (nameInput !== "") monPseudo = nameInput;
 
@@ -91,12 +103,10 @@ function initialiserConnexionInvite(connection) {
 function envoyerActionReseau(type, contenu) {
     const message = { type: type, contenu: contenu };
     if (estHote) {
-        // L'hôte envoie le message à tous les invités
         conns.forEach(c => {
             if (c.open) c.send(message);
         });
     } else if (connHote && connHote.open) {
-        // L'invité envoie uniquement à l'hôte
         connHote.send(message);
     }
 }
