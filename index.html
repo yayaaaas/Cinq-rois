@@ -11,6 +11,8 @@
 </head>
 <body>
 
+    <button id="btn-home" onclick="retourAccueil()" style="display: none;">🏠 Accueil</button>
+
     <div id="main-menu">
         <h1>Jeu du Cinq Rois 👑</h1>
         
@@ -82,11 +84,6 @@
                     </div>
                 </div>
                 <button id="btn-cancel-draw" onclick="annulerPiocheDefausse()" style="display:none;">↩️ Annuler la pioche défausse</button>
-
-                <div id="tableau-adversaire" style="display: none;">
-                    <h3>Combinaisons des Joueurs</h3>
-                    <div id="zones-combinaisons-adversaire"></div>
-                </div>
             </div>
 
             <div id="modal-joueurs" class="game-panel modal-panel">
@@ -117,8 +114,6 @@
 
                 <div id="player-hand"></div>
             </div>
-
-            <button id="btn-home" onclick="retourAccueil()">🏠 Accueil</button>
 
         </div>
 
