@@ -28,7 +28,7 @@
         <div id="multi-panel" style="display: none;" class="menu-box">
             <h4>Multijoueur (Firebase)</h4>
             <label for="nb-players-select"><b>Nombre de joueurs à la table :</b></label><br>
-            <select id="nb-players-select" style="padding: 8px; margin: 8px 0; border-radius: 5px; font-weight: bold;">
+            <select id="nb-players-select">
                 <option value="2">2 Joueurs</option>
                 <option value="3">3 Joueurs</option>
                 <option value="4">4 Joueurs</option>
@@ -97,17 +97,6 @@
                 <div id="players-list"></div>
             </div>
 
-            <div id="modal-fin-manche" class="game-panel modal-panel" style="text-align: center; padding: 20px;">
-                <div class="panel-header">
-                    <h2>🏁 Bilan de la Manche</h2>
-                </div>
-                <div id="recap-fin-manche-content" style="margin: 15px 0; font-size: 15px; line-height: 1.6;"></div>
-                <button id="btn-valider-fin-manche" onclick="validerFinMancheBouton()" style="background-color: #2ecc71; color: white; padding: 12px 24px; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;">
-                    👍 Prêt pour la manche suivante !
-                </button>
-                <p id="attente-joueurs-msg" style="margin-top: 15px; color: #f1c40f; font-weight: bold;"></p>
-            </div>
-
             <div id="player-zone" class="game-panel">
                 <div id="tableau-pose">
                     <h3>Vos Combinaisons (à poser)</h3>
@@ -132,6 +121,16 @@
             <button id="btn-home" onclick="retourAccueil()">🏠 Accueil</button>
 
         </div>
+
+        <div id="modal-fin-manche">
+            <h2>🏁 Bilan de la Manche</h2>
+            <div id="recap-fin-manche-content" style="margin: 15px 0; font-size: 15px; line-height: 1.6;"></div>
+            <button id="btn-valider-fin-manche" onclick="validerFinMancheBouton()" style="background-color: #2ecc71; color: white; padding: 12px 24px; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; width: 100%;">
+                👍 Prêt pour la manche suivante !
+            </button>
+            <p id="attente-joueurs-msg" style="margin-top: 12px; color: #f1c40f; font-weight: bold;"></p>
+        </div>
+
     </div>
 
     <script src="game.js"></script>
