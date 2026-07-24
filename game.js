@@ -485,7 +485,6 @@ function actionDefausserBouton() {
         aPoseMaMain = false;
     }
 
-    // Enregistrer les points de pénalité du joueur
     penalitesCumulees[monIndexReseau] = estDernierTour ? (monIndexReseau === indexJoueurQuiAPoseReseau ? 0 : calculerPointsMain(maMain)) : 0;
 
     let suivantIndex = (indexJoueurActuelReseau + 1) % joueursReseau.length;
@@ -642,7 +641,6 @@ function synchroniserEtatJeu(state, confirmations) {
 
         ouvrirModal('modal-fin-manche');
 
-        // Désactiver le bouton si le joueur a déjà cliqué
         let btnValider = document.getElementById('btn-valider-fin-manche');
         if (confirmations && confirmations[monIndexReseau]) {
             btnValider.disabled = true;
@@ -654,7 +652,6 @@ function synchroniserEtatJeu(state, confirmations) {
             btnValider.style.backgroundColor = "#2ecc71";
         }
 
-        // Si l'hôte constate que tout le monde a validé
         if (estHote && nbConf >= joueursReseau.length) {
             mancheActuelle++;
             if (mancheActuelle > 11) {
@@ -854,7 +851,7 @@ function ajouterLigneScoreSolo(manche, penHumain, penBot1, penBot2, penBot3) {
 }
 
 // ==========================================
-// 7. MODALES MOBILE
+// 7. MODALES MOBILE & OVERLAYS
 // ==========================================
 function ouvrirModal(idModal) {
     const modal = document.getElementById(idModal);
