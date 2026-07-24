@@ -37,12 +37,12 @@ function creerPartie() {
     let joueurHote = { index: 0, pseudo: monPseudo, score: 0 };
     joueursReseau = [joueurHote];
 
-    // Création du salon dans la base de données
     roomRef.set({
         status: "WAITING",
         nbAttendus: nbJoueursAttendus,
         joueurs: [joueurHote],
-        derniereAction: null
+        gameState: null,
+        confirmations: null
     }).then(() => {
         document.getElementById('my-id-display').innerHTML = `Partie créée ! Code : <b style="font-size: 20px; color: #f1c40f;">${roomCode}</b>`;
         document.getElementById('status-message').innerText = `En attente de ${nbJoueursAttendus - 1} autre(s) joueur(s)...`;
@@ -80,7 +80,6 @@ function rejoindrePartie() {
             return;
         }
 
-        // Vérifier si déjà présent
         let pIndex = listeJ.findIndex(j => j.pseudo === monPseudo);
         if (pIndex === -1) {
             monIndexReseau = listeJ.length;
@@ -107,7 +106,7 @@ function ecouterSalonFirebase() {
 
         joueursReseau = roomData.joueurs || [];
 
-        // L'Hôte lance la partie quand la table est complète
+        // L'Hôte démarre la partie quand la table est complète
         if (estHote && roomData.status === "WAITING" && joueursReseau.length === nbJoueursAttendus) {
             roomRef.child('status').set("PLAYING");
             preparerTableauScoresUI();
@@ -116,20 +115,19 @@ function ecouterSalonFirebase() {
             return;
         }
 
-        // Action transmise dans le jeu
-        if (roomData.derniereAction) {
-            recevoirActionReseau(roomData.derniereAction);
+        // Synchronisation continue de l'état du jeu
+        if (roomData.gameState) {
+            synchroniserEtatJeu(roomData.gameState, roomData.confirmations);
         }
     });
 }
 
-function envoyerActionReseau(type, contenu) {
+function envoyerEtatJeuFirebase(nouvelEtat) {
     if (!roomRef) return;
-    
-    // Écriture de l'action dans Firebase (synchronisée en temps réel chez tout le monde)
-    roomRef.child('derniereAction').set({
-        type: type,
-        contenu: contenu,
-        timestamp: Date.now()
-    });
+    roomRef.child('gameState').set(nouvelEtat);
+}
+
+function envoyerConfirmationJoueur(indexJ) {
+    if (!roomRef) return;
+    roomRef.child('confirmations/' + indexJ).set(true);
 }
