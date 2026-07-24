@@ -64,6 +64,7 @@ function reinitialiserVariablePartie() {
     indexJoueurQuiAPoseReseau = -1;
     mainsJoueursGlobales = {};
     penalitesCumulees = {};
+    derniereMancheAnnoncee = 0;
     
     if (typeof bots !== 'undefined') bots.forEach(b => b.score = 0);
     
@@ -254,11 +255,16 @@ function mettreAJourStatutTour() {
     if (!status) return;
 
     if (modeJeu === "SOLO") {
-        status.innerText = monTour ? `[Manche ${mancheActuelle}/11] C'est VOTRE tour !` : `[Manche ${mancheActuelle}/11] Tour des bots...`;
+        let nomJoueurActuel = listeJoueursSolo[indexJoueurActuel] ? (listeJoueursSolo[indexJoueurActuel].type === 'HUMAIN' ? 'VOTRE' : listeJoueursSolo[indexJoueurActuel].botData.nom) : '';
+        if (estDernierTour) {
+            status.innerText = monTour ? `⚠️ [DERNIER TOUR - Manche ${mancheActuelle}/11] C'est VOTRE tour !` : `⚠️ [DERNIER TOUR - Manche ${mancheActuelle}/11] Tour de ${nomJoueurActuel}...`;
+        } else {
+            status.innerText = monTour ? `[Manche ${mancheActuelle}/11] C'est VOTRE tour !` : `[Manche ${mancheActuelle}/11] Tour de ${nomJoueurActuel}...`;
+        }
     } else {
         let joueurNom = joueursReseau[indexJoueurActuelReseau] ? joueursReseau[indexJoueurActuelReseau].pseudo : "un joueur";
         if (estDernierTour) {
-            status.innerText = monTour ? `⚠️ [DERNIER TOUR] C'est VOTRE tour !` : `⚠️ [DERNIER TOUR] Tour de ${joueurNom}...`;
+            status.innerText = monTour ? `⚠️ [DERNIER TOUR - Manche ${mancheActuelle}/11] C'est VOTRE tour !` : `⚠️ [DERNIER TOUR - Manche ${mancheActuelle}/11] Tour de ${joueurNom}...`;
         } else {
             status.innerText = monTour ? `[Manche ${mancheActuelle}/11] C'est VOTRE tour !` : `[Manche ${mancheActuelle}/11] Tour de ${joueurNom}...`;
         }
@@ -327,6 +333,17 @@ function actionPiocher() {
     if (aPioche) {
         alert("Vous avez déjà pioché !");
         return;
+    }
+
+    if (pioche.length === 0) {
+        if (defausse.length > 1) {
+            let derniere = defausse.pop();
+            pioche = melanger(defausse);
+            defausse = [derniere];
+        } else {
+            alert("Plus de cartes disponibles dans la pioche !");
+            return;
+        }
     }
 
     let cartePiochee = pioche.pop();
@@ -546,7 +563,7 @@ function calculerPointsMain(main) {
 }
 
 // ==========================================
-// 5. SYNCHRONISATION FIREBASE
+// 5. SYNCHRONISATION FIREBASE & DECOUPE DES MANCHES
 // ==========================================
 function preparerTableauScoresUI() {
     const headerTr = document.getElementById('score-header');
@@ -557,7 +574,7 @@ function preparerTableauScoresUI() {
 
     if (modeJeu === "SOLO") {
         headerTr.innerHTML = `<th>Manche</th><th>${monPseudo}</th><th>${bots[0].nom}</th><th>${bots[1].nom}</th><th>${bots[2].nom}</th>`;
-        footerTr.innerHTML = `<th>TOTAL</th><th id="total-joueur">0 pts</th><th id="total-bot-1">0 pts</th><th id="total-bot-2">0 pts</th><th id="total-bot-3">0 pts</th>`;
+        footerTr.innerHTML = `<th>TOTAL</th><th id="total-joueur">${scoreJoueur} pts</th><th id="total-bot-1">${bots[0].score} pts</th><th id="total-bot-2">${bots[1].score} pts</th><th id="total-bot-3">${bots[2].score} pts</th>`;
     } else {
         let cols = `<th>Manche</th>`;
         let foot = `<th>TOTAL</th>`;
@@ -570,7 +587,6 @@ function preparerTableauScoresUI() {
     }
 }
 
-// Variable pour éviter de répéter l'annonce de nouvelle manche
 let derniereMancheAnnoncee = 0;
 
 function demarrerMancheReseau() {
@@ -603,13 +619,14 @@ function demarrerMancheReseau() {
         finDeManche: false
     };
 
+    // Vider explicitement les confirmations précédentes
+    if (roomRef) roomRef.child('confirmations').remove();
     envoyerEtatJeuFirebase(etatInitial);
 }
 
 function synchroniserEtatJeu(state, confirmations) {
     if (!state) return;
 
-    let ancienneManche = mancheActuelle;
     mancheActuelle = state.mancheActuelle;
     pioche = state.pioche || [];
     defausse = state.defausse || [];
@@ -640,7 +657,6 @@ function synchroniserEtatJeu(state, confirmations) {
         if (valeurAtout === '12') valeurAtout = 'Dame (D)';
         if (valeurAtout === '13') valeurAtout = 'Roi (R)';
 
-        // Notification temporaire en haut
         const statusMsg = document.getElementById('status-message');
         if (statusMsg) {
             statusMsg.innerHTML = `🚀 <b>DÉBUT DE LA MANCHE ${mancheActuelle}/11</b> — ${mancheActuelle + 2} cartes distribuées | <b>Atout : ${valeurAtout} ⭐</b>`;
@@ -651,7 +667,7 @@ function synchroniserEtatJeu(state, confirmations) {
     if (state.finDeManche) {
         let nbConf = confirmations ? Object.keys(confirmations).length : 0;
         
-        let recapHTML = `<b>Récapitulatif des pénalités (Manche ${mancheActuelle}) :</b><br><br>`;
+        let recapHTML = `<h3>🏁 Fin de la Manche ${mancheActuelle} !</h3><b>Récapitulatif des pénalités :</b><br><br>`;
         joueursReseau.forEach(j => {
             let pen = penalitesCumulees[j.index] || 0;
             recapHTML += `• <b>${j.pseudo}</b> : +${pen} pts (Total: ${j.score || 0} pts)<br>`;
@@ -673,14 +689,11 @@ function synchroniserEtatJeu(state, confirmations) {
             btnValider.style.backgroundColor = "#2ecc71";
         }
 
-        // Passage à la manche suivante dès que tout le monde est prêt
         if (estHote && nbConf >= joueursReseau.length) {
             mancheActuelle++;
             if (mancheActuelle > 11) {
-                alert("🏆 PARTIE TERMINÉE ! Tous les 11 manches ont été jouées.");
+                alert("🏆 PARTIE TERMINÉE ! Les 11 manches ont été jouées.");
             } else {
-                roomRef.child('confirmations').remove();
-                fermerModal('modal-fin-manche');
                 demarrerMancheReseau();
             }
         }
@@ -688,7 +701,18 @@ function synchroniserEtatJeu(state, confirmations) {
 }
 
 function validerFinMancheBouton() {
-    envoyerConfirmationJoueur(monIndexReseau);
+    if (modeJeu === "SOLO") {
+        fermerModal('modal-fin-manche');
+        mancheActuelle++;
+        if (mancheActuelle > 11) {
+            alert("🎮 PARTIE SOLO TERMINÉE ! Les 11 manches ont été jouées.");
+            document.getElementById('status-message').innerText = "🏆 Partie terminée !";
+        } else {
+            initialiserPartieSolo();
+        }
+    } else {
+        envoyerConfirmationJoueur(monIndexReseau);
+    }
 }
 
 function mettreAJourListeJoueursMultiUI() {
@@ -721,7 +745,6 @@ let indexJoueurQuiAPose = -1;
 function initialiserPartieSolo() {
     if (mancheActuelle === 1) {
         reinitialiserVariablePartie();
-        preparerTableauScoresUI();
     }
 
     pioche = melanger(genererDeck());
@@ -752,20 +775,39 @@ function initialiserPartieSolo() {
     indexJoueurActuel = 0; 
     monTour = true;
 
+    preparerTableauScoresUI();
     afficherMain();
     afficherDefausse();
     afficherGroupesAPoser();
     mettreAJourListeJoueursUI();
     mettreAJourStatutTour();
+
+    let valeurAtout = (mancheActuelle + 2).toString();
+    if (valeurAtout === '11') valeurAtout = 'Valet (V)';
+    if (valeurAtout === '12') valeurAtout = 'Dame (D)';
+    if (valeurAtout === '13') valeurAtout = 'Roi (R)';
+
+    const statusMsg = document.getElementById('status-message');
+    if (statusMsg) {
+        statusMsg.innerHTML = `🚀 <b>DÉBUT DE LA MANCHE ${mancheActuelle}/11</b> — ${mancheActuelle + 2} cartes distribuées | <b>Atout : ${valeurAtout} ⭐</b>`;
+    }
 }
 
 function jouerTourBot(bot) {
     document.getElementById('status-message').innerText = `🤖 ${bot.nom} réfléchit...`;
 
     setTimeout(() => {
-        if (pioche.length === 0) actionPiocher(); 
-        let cartePiochee = pioche.pop();
-        bot.main.push(cartePiochee);
+        if (pioche.length === 0) {
+            if (defausse.length > 1) {
+                let derniere = defausse.pop();
+                pioche = melanger(defausse);
+                defausse = [derniere];
+            }
+        }
+        if (pioche.length > 0) {
+            let cartePiochee = pioche.pop();
+            bot.main.push(cartePiochee);
+        }
 
         bot.main.sort((a, b) => {
             let ptsA = estUnJokerOuAtout(a) ? 0 : obtenirValeurNumerique(a.valeur);
@@ -836,13 +878,22 @@ function finirMancheSolo() {
 
     ajouterLigneScoreSolo(mancheActuelle, penHumain, penBot1, penBot2, penBot3);
 
-    mancheActuelle++;
-    if (mancheActuelle > 11) {
-        alert("🎮 PARTIE SOLO TERMINÉE ! Les 11 manches ont été jouées.");
-        document.getElementById('status-message').innerText = "🏆 Partie terminée !";
-    } else {
-        initialiserPartieSolo();
-    }
+    // Bilan pop-up pour le Solo
+    let recapHTML = `<h3>🏁 Fin de la Manche ${mancheActuelle} !</h3><b>Récapitulatif des pénalités :</b><br><br>`;
+    recapHTML += `• <b>${monPseudo}</b> : +${penHumain} pts (Total: ${scoreJoueur} pts)<br>`;
+    recapHTML += `• <b>${bots[0].nom}</b> : +${penBot1} pts (Total: ${bots[0].score} pts)<br>`;
+    recapHTML += `• <b>${bots[1].nom}</b> : +${penBot2} pts (Total: ${bots[1].score} pts)<br>`;
+    recapHTML += `• <b>${bots[2].nom}</b> : +${penBot3} pts (Total: ${bots[2].score} pts)<br>`;
+
+    document.getElementById('recap-fin-manche-content').innerHTML = recapHTML;
+    document.getElementById('attente-joueurs-msg').innerText = "Appuyez sur le bouton pour continuer.";
+
+    let btnValider = document.getElementById('btn-valider-fin-manche');
+    btnValider.disabled = false;
+    btnValider.innerText = "👍 Prêt pour la manche suivante !";
+    btnValider.style.backgroundColor = "#2ecc71";
+
+    ouvrirModal('modal-fin-manche');
 }
 
 function ajouterLigneScoreSolo(manche, penHumain, penBot1, penBot2, penBot3) {
