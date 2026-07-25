@@ -97,20 +97,6 @@
                 <div id="players-list"></div>
             </div>
 
-            <div id="modal-chat" class="game-panel modal-panel">
-                <div class="panel-header">
-                    <h3>💬 Chat de Table</h3>
-                    <button class="btn-close-modal" onclick="fermerModal('modal-chat')">✖</button>
-                </div>
-                <div id="chat-box">
-                    <div id="chat-messages"></div>
-                    <form id="chat-form" onsubmit="envoyerMessageChat(event)">
-                        <input type="text" id="chat-input" placeholder="Écrivez un message..." maxlength="120" autocomplete="off">
-                        <button type="submit" id="chat-send-btn">Envoyer</button>
-                    </form>
-                </div>
-            </div>
-
             <div id="player-zone" class="game-panel">
                 <div id="tableau-pose">
                     <h3>Vos Combinaisons (à poser)</h3>
@@ -133,6 +119,22 @@
             </div>
 
         </div>
+
+        <div id="modal-chat" class="game-panel modal-panel chat-widget">
+            <div class="panel-header">
+                <h3>💬 Chat de Table</h3>
+                <button class="btn-close-modal" onclick="fermerModal('modal-chat')">✖</button>
+            </div>
+            <div id="chat-box">
+                <div id="chat-messages"></div>
+                <form id="chat-form" onsubmit="envoyerMessageChat(event)">
+                    <input type="text" id="chat-input" placeholder="Écrivez un message..." maxlength="120" autocomplete="off">
+                    <button type="submit" id="chat-send-btn">Envoyer</button>
+                </form>
+            </div>
+        </div>
+
+        <button id="btn-pc-chat-toggle" onclick="ouvrirModal('modal-chat')">💬 Chat</button>
 
         <div id="modal-fin-manche">
             <h2>🏁 Bilan de la Manche</h2>
