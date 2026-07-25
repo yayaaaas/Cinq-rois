@@ -164,37 +164,54 @@
     </div>
 
     <!-- 🟢 MODALE INTERACTIVE DES RÈGLES / AIDE -->
-    <div id="modal-regles" class="modal-panel">
-        <div class="panel-header">
-            <h2>📜 Règles & Aide du Jeu</h2>
-            <button class="btn-close-modal" onclick="fermerModal('modal-regles')">✖</button>
-        </div>
+    <!-- 📜 MODALE INTERACTIVE DES RÈGLES OFFICIELLES (CINQ ROIS) -->
+<div id="modal-regles" class="modal-panel">
+    <div class="panel-header">
+        <h2>📜 Règles du Jeu (Cinq Rois)</h2>
+        <button class="btn-close-modal" onclick="fermerModal('modal-regles')">✖</button>
+    </div>
         <div style="text-align: left; line-height: 1.5; font-size: 14px; padding: 10px; max-height: 70vh; overflow-y: auto;">
-            <p><b>🎯 Objectif :</b> Obtenir le score le plus bas possible à la fin des 11 manches !</p>
             
-            <h4>👑 Cartes & Atouts</h4>
+            <p><b>🎯 But du jeu :</b> Posez toutes vos cartes sous forme de combinaisons. À la fin des 11 manches, le joueur avec le score le plus bas l'emporte !</p>
+            
+            <h4>🃏 Contenu & Distribution</h4>
             <ul>
-                <li>Le jeu comporte 5 enseignes (♥ ♦ ♣ ♠ ★) + Jokers.</li>
-                <li>À chaque manche, le nombre de cartes distribuées augmente (M1 = 3 cartes, M11 = 13 cartes).</li>
-                <li>L'atout change à chaque manche selon le nombre de cartes (M1 = 3, M2 = 4 ... M9 = V, M10 = D, M11 = R).</li>
+                <li><b>2 decks de 58 cartes :</b> 5 couleurs (♥ Cœur, ♦ Carreau, ♣ Trèfle, ♠ Pique, ★ Étoile) de la valeur 3 au Roi + 6 Jokers.</li>
+                <li><b>11 manches évolutives :</b> Vous recevez 3 cartes à la manche 1, 4 cartes à la manche 2, jusqu'à 13 cartes à la manche 11.</li>
             </ul>
 
-            <h4>🧩 Combinaisons valides</h4>
+            <h4>⭐ Atouts & Jokers</h4>
             <ul>
-                <li><b>Famille (Brelan/Carré) :</b> Au moins 3 cartes de même valeur.</li>
-                <li><b>Suite :</b> Au moins 3 cartes consécutives de la même couleur.</li>
-                <li><i>Règle spéciale :</i> Durant les 3 premières manches, vous ne pouvez poser qu'<b>une seule</b> combinaison.</li>
+                <li><b>Jokers :</b> Sont toujours des jokers et valent <b>50 points</b> de pénalité.</li>
+                <li><b>Atouts :</b> Varient à chaque manche selon le nombre de cartes distribuées (M1: 3, M2: 4 ... M9: Valet, M10: Dame, M11: Roi). Ils valent <b>20 points</b> de pénalité.</li>
+                <li>Atouts et Jokers peuvent remplacer n'importe quelle carte dans une combinaison.</li>
             </ul>
 
-            <h4>🔄 Déroulement d'un tour</h4>
+            <h4>🧩 Combinaisons Valides</h4>
+            <ul>
+                <li><b>Suite :</b> Au moins 3 cartes consécutives de la <i>même couleur</i> (ex: 4-5-6-7 de Trèfle).</li>
+                <li><b>Famille (Brelan/Carré) :</b> Au moins 3 cartes de la <i>même valeur</i> quelle que soit la couleur (ex: 3 Valets).</li>
+                <li><i>Note :</i> Durant les 3 premières manches, une seule combinaison peut être posée.</li>
+            </ul>
+
+            <h4>🔄 Déroulement d'un Tour</h4>
             <ol>
-                <li>Piocher une carte (pioche ou défausse).</li>
-                <li>(Optionnel) Créer ou poser vos combinaisons.</li>
-                <li>Défausser 1 carte pour terminer le tour.</li>
+                <li><b>Piocher :</b> Prenez 1 carte dans la pioche ou dans la défausse.</li>
+                <li><b>Poser sa main :</b> Vous pouvez poser TOUTES vos cartes en combinaisons valides dès que possible.</li>
+                <li><b>Défausser :</b> Déposez 1 carte sur la défausse face visible pour terminer votre tour.</li>
             </ol>
 
-            <h4>🏁 Fin de manche</h4>
-            <p>Lorsqu'un joueur pose <b>toute sa main</b>, les autres disposent d'un <b>dernier tour</b> avant le décompte des pénalités.</p>
+            <h4>🏁 Fin de Manche & Décompte des Points</h4>
+            <p>Dès qu'un joueur pose toute sa main et défausse sa dernière carte, tous les autres joueurs disposent d'<b>un dernier tour</b>. Les cartes restant en main sont comptabilisées en pénalités :</p>
+            <ul>
+                <li><b>Cartes 3 à 10 :</b> Valeur faciale (3 à 10 points)</li>
+                <li><b>Valets (V) :</b> 11 points</li>
+                <li><b>Dames (D) :</b> 12 points</li>
+                <li><b>Rois (R) :</b> 13 points</li>
+                <li><b>Atouts de la manche :</b> 20 points</li>
+                <li><b>Jokers :</b> 50 points</li>
+            </ul>
+
         </div>
     </div>
 
