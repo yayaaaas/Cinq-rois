@@ -52,6 +52,7 @@
             <div id="mobile-nav">
                 <button class="btn-nav" onclick="ouvrirModal('modal-scores')">📊 Scores</button>
                 <button class="btn-nav" onclick="ouvrirModal('modal-joueurs')">👥 Joueurs</button>
+                <button class="btn-nav" id="btn-nav-chat" onclick="ouvrirModal('modal-chat')">💬 Chat</button>
             </div>
 
             <div id="status-message">[Manche 1/11] C'est votre tour</div>
@@ -94,6 +95,20 @@
                     <button class="btn-close-modal" onclick="fermerModal('modal-joueurs')">✖</button>
                 </div>
                 <div id="players-list"></div>
+            </div>
+
+            <div id="modal-chat" class="game-panel modal-panel">
+                <div class="panel-header">
+                    <h3>💬 Chat de Table</h3>
+                    <button class="btn-close-modal" onclick="fermerModal('modal-chat')">✖</button>
+                </div>
+                <div id="chat-box">
+                    <div id="chat-messages"></div>
+                    <form id="chat-form" onsubmit="envoyerMessageChat(event)">
+                        <input type="text" id="chat-input" placeholder="Écrivez un message..." maxlength="120" autocomplete="off">
+                        <button type="submit" id="chat-send-btn">Envoyer</button>
+                    </form>
+                </div>
             </div>
 
             <div id="player-zone" class="game-panel">
