@@ -472,6 +472,30 @@ tfoot {
     }
 }
 
+/* Bouton Aide flottant compact */
+#btn-help-floating {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #f1c40f;
+    color: #2c3e50;
+    font-weight: bold;
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    z-index: 2400;
+    font-size: 13px;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+#btn-help-floating:hover {
+    transform: scale(1.08);
+    background-color: #f39c12;
+}
+
+/* Modale des Règles */
 #modal-regles {
     display: none;
     position: fixed;
@@ -479,15 +503,23 @@ tfoot {
     left: 50%;
     transform: translate(-50%, -50%);
     width: 90%;
-    max-width: 550px;
+    max-width: 500px;
     background-color: #1c2833;
     border: 3px solid #f1c40f;
     border-radius: 12px;
     padding: 15px;
-    z-index: 3000;
+    z-index: 3500;
     box-shadow: 0 0 30px rgba(0,0,0,0.9);
 }
 
 #modal-regles.open {
     display: block !important;
+}
+
+/* Ajustement positionnement sur ordinateur si le tchat est aussi à droite */
+@media screen and (min-width: 851px) {
+    #btn-pc-chat-toggle {
+        bottom: 20px;
+        right: 110px; /* Décale le bouton tchat PC pour ne pas superposer le bouton aide */
+    }
 }
