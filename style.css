@@ -230,7 +230,7 @@ tfoot {
 }
 
 /* ==========================================
-   STYLE DU CHAT (DESKTOP & MOBILE)
+   STYLE DU CHAT
    ========================================== */
 #modal-chat.chat-widget {
     position: fixed;
@@ -303,7 +303,7 @@ tfoot {
     border-radius: 4px;
 }
 
-/* Bouton Chat fixe sur PC */
+/* Bouton Chat flottant PC (affiché uniquement sur ordinateur) */
 #btn-pc-chat-toggle {
     position: fixed;
     bottom: 20px;
@@ -315,6 +315,7 @@ tfoot {
     border-radius: 25px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     z-index: 2400;
+    display: block;
 }
 
 /* Bouton Accueil */
@@ -362,8 +363,9 @@ tfoot {
    ========================================== */
 @media screen and (max-width: 850px) {
     
+    /* 🔴 CACHE IMPÉRATIVEMENT LE BOUTON CHAT DU BAS SUR MOBILE */
     #btn-pc-chat-toggle {
-        display: none; /* Cache le bouton PC sur mobile car il y a le bouton mobile */
+        display: none !important;
     }
 
     #mobile-header-fixed {
