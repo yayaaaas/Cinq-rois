@@ -23,7 +23,7 @@ body {
 /* LAYOUT PC EN 3 COLONNES */
 #game-container {
     display: grid;
-    grid-template-columns: 320px 1fr 300px;
+    grid-template-columns: 320px 1fr 280px;
     gap: 15px;
     max-width: 1400px;
     margin: 0 auto;
@@ -230,17 +230,38 @@ tfoot {
 }
 
 /* ==========================================
-   STYLE DU CHAT
+   STYLE DU CHAT (DESKTOP & MOBILE)
    ========================================== */
+#modal-chat.chat-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 320px;
+    z-index: 2500;
+    background-color: #1c2833;
+    border: 2px solid #f1c40f;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.6);
+    display: none;
+}
+
+#modal-chat.chat-widget.open {
+    display: block !important;
+}
+
+#modal-chat .panel-header .btn-close-modal {
+    display: inline-block !important;
+}
+
 #chat-box {
     display: flex;
     flex-direction: column;
-    height: 220px;
+    height: 240px;
 }
 
 #chat-messages {
     flex: 1;
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.3);
     border-radius: 6px;
     padding: 8px;
     overflow-y: auto;
@@ -280,6 +301,20 @@ tfoot {
     color: white;
     padding: 6px 12px;
     border-radius: 4px;
+}
+
+/* Bouton Chat fixe sur PC */
+#btn-pc-chat-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #f1c40f;
+    color: #2c3e50;
+    font-weight: bold;
+    padding: 10px 18px;
+    border-radius: 25px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    z-index: 2400;
 }
 
 /* Bouton Accueil */
@@ -327,6 +362,10 @@ tfoot {
    ========================================== */
 @media screen and (max-width: 850px) {
     
+    #btn-pc-chat-toggle {
+        display: none; /* Cache le bouton PC sur mobile car il y a le bouton mobile */
+    }
+
     #mobile-header-fixed {
         position: sticky;
         top: 0;
@@ -372,7 +411,7 @@ tfoot {
         font-size: 16px !important;
     }
 
-    /* Modales de Modaux Mobile */
+    /* Modales Mobile */
     .modal-panel {
         display: none;
         position: fixed;
@@ -387,6 +426,16 @@ tfoot {
         border: 2px solid #f1c40f;
         border-radius: 10px;
         padding: 15px;
+    }
+
+    #modal-chat.chat-widget {
+        position: fixed;
+        top: 5%;
+        left: 4%;
+        width: 92%;
+        height: auto;
+        bottom: auto;
+        right: auto;
     }
 
     .modal-panel.open {
@@ -417,6 +466,6 @@ tfoot {
     }
 
     #chat-box {
-        height: 300px;
+        height: 280px;
     }
 }
