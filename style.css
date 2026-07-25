@@ -471,3 +471,23 @@ tfoot {
         height: 280px;
     }
 }
+
+#modal-regles {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 550px;
+    background-color: #1c2833;
+    border: 3px solid #f1c40f;
+    border-radius: 12px;
+    padding: 15px;
+    z-index: 3000;
+    box-shadow: 0 0 30px rgba(0,0,0,0.9);
+}
+
+#modal-regles.open {
+    display: block !important;
+}
