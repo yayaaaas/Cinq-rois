@@ -23,7 +23,7 @@ body {
 /* LAYOUT PC EN 3 COLONNES */
 #game-container {
     display: grid;
-    grid-template-columns: 320px 1fr 280px;
+    grid-template-columns: 320px 1fr 300px;
     gap: 15px;
     max-width: 1400px;
     margin: 0 auto;
@@ -229,6 +229,59 @@ tfoot {
     background-color: #2e4053;
 }
 
+/* ==========================================
+   STYLE DU CHAT
+   ========================================== */
+#chat-box {
+    display: flex;
+    flex-direction: column;
+    height: 220px;
+}
+
+#chat-messages {
+    flex: 1;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    padding: 8px;
+    overflow-y: auto;
+    text-align: left;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.chat-msg {
+    word-break: break-word;
+    line-height: 1.3;
+}
+
+.chat-msg .sender {
+    color: #f1c40f;
+    font-weight: bold;
+}
+
+#chat-form {
+    display: flex;
+    gap: 5px;
+}
+
+#chat-input {
+    flex: 1;
+    padding: 6px;
+    border-radius: 4px;
+    border: none;
+    font-size: 13px;
+}
+
+#chat-send-btn {
+    background-color: #3498db;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
 /* Bouton Accueil */
 #btn-home {
     position: fixed;
@@ -246,9 +299,7 @@ tfoot {
     z-index: 1000;
 }
 
-/* ==========================================
-   POPUP DE FIN DE MANCHE (TOUS ÉCRANS)
-   ========================================== */
+/* POPUP DE FIN DE MANCHE */
 #modal-fin-manche {
     display: none;
     position: fixed;
@@ -276,12 +327,11 @@ tfoot {
    ========================================== */
 @media screen and (max-width: 850px) {
     
-    /* 📌 Fixe le bandeau d'en-tête (Nav + Statut) en haut de l'écran */
     #mobile-header-fixed {
         position: sticky;
         top: 0;
         z-index: 1000;
-        background-color: #2c3e50; /* Couleur de fond pour éviter la transparence au swipe */
+        background-color: #2c3e50;
         padding-top: 5px;
         padding-bottom: 5px;
         border-bottom: 2px solid #f1c40f;
@@ -306,12 +356,11 @@ tfoot {
         color: #2c3e50;
         font-weight: bold;
         border-radius: 20px;
-        padding: 6px 16px;
-        font-size: 13px;
+        padding: 6px 14px;
+        font-size: 12px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
 
-    /* Réduction de la taille des cartes sur mobile */
     .card, .card-slot {
         width: 60px;
         height: 90px;
@@ -323,7 +372,7 @@ tfoot {
         font-size: 16px !important;
     }
 
-    /* Fenêtres Pop-up modales (Scores et Joueurs) */
+    /* Modales de Modaux Mobile */
     .modal-panel {
         display: none;
         position: fixed;
@@ -365,5 +414,9 @@ tfoot {
         width: 92%;
         max-height: 85vh;
         overflow-y: auto;
+    }
+
+    #chat-box {
+        height: 300px;
     }
 }
