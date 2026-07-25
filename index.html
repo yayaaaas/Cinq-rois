@@ -163,14 +163,13 @@
 
     </div>
 
-    <!-- 🟢 MODALE INTERACTIVE DES RÈGLES / AIDE -->
     <!-- 📜 MODALE INTERACTIVE DES RÈGLES OFFICIELLES (CINQ ROIS) -->
-<div id="modal-regles" class="modal-panel">
-    <div class="panel-header">
-        <h2>📜 Règles du Jeu (Cinq Rois)</h2>
-        <button class="btn-close-modal" onclick="fermerModal('modal-regles')">✖</button>
-    </div>
-        <div style="text-align: left; line-height: 1.5; font-size: 14px; padding: 10px; max-height: 70vh; overflow-y: auto;">
+    <div id="modal-regles" class="modal-panel">
+        <div class="panel-header">
+            <h2>📜 Règles du Jeu (Cinq Rois)</h2>
+            <button class="btn-close-modal" onclick="fermerModal('modal-regles')">✖</button>
+        </div>
+        <div style="text-align: left; line-height: 1.5; font-size: 14px; padding: 10px; max-height: 60vh; overflow-y: auto;">
             
             <p><b>🎯 But du jeu :</b> Posez toutes vos cartes sous forme de combinaisons. À la fin des 11 manches, le joueur avec le score le plus bas l'emporte !</p>
             
@@ -212,6 +211,13 @@
                 <li><b>Jokers :</b> 50 points</li>
             </ul>
 
+        </div>
+
+        <!-- 🟢 BOUTON FERMER AU BAS DE LA MODALE -->
+        <div style="margin-top: 15px; text-align: center;">
+            <button onclick="fermerModal('modal-regles')" style="background-color: #e74c3c; color: white; padding: 10px 20px; font-size: 14px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; width: 100%;">
+                ✖ Fermer les règles
+            </button>
         </div>
     </div>
 
