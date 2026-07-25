@@ -17,6 +17,7 @@ const db = firebase.database();
 
 let roomCode = null;
 let roomRef = null;
+let nbJoueursAttendus = 2;
 
 function creerPartie() {
     modeJeu = "MULTI";
@@ -42,11 +43,13 @@ function creerPartie() {
         nbAttendus: nbJoueursAttendus,
         joueurs: [joueurHote],
         gameState: null,
-        confirmations: null
+        confirmations: null,
+        messages: null
     }).then(() => {
         document.getElementById('my-id-display').innerHTML = `Partie créée ! Code : <b style="font-size: 20px; color: #f1c40f;">${roomCode}</b>`;
         document.getElementById('status-message').innerText = `En attente de ${nbJoueursAttendus - 1} autre(s) joueur(s)...`;
         ecouterSalonFirebase();
+        ecouterChatFirebase();
     });
 }
 
@@ -94,6 +97,7 @@ function rejoindrePartie() {
         nbJoueursAttendus = roomData.nbAttendus;
         demarrerJeuUI();
         ecouterSalonFirebase();
+        ecouterChatFirebase();
     });
 }
 
@@ -130,4 +134,53 @@ function envoyerEtatJeuFirebase(nouvelEtat) {
 function envoyerConfirmationJoueur(indexJ) {
     if (!roomRef) return;
     roomRef.child('confirmations/' + indexJ).set(true);
+}
+
+// ==========================================
+// CHAT EN TEMPS RÉEL (FIREBASE)
+// ==========================================
+function envoyerMessageChat(event) {
+    event.preventDefault();
+    const input = document.getElementById('chat-input');
+    const texte = input.value.trim();
+
+    if (!texte) return;
+
+    if (modeJeu === "SOLO") {
+        afficherNouveauMessageChat(monPseudo, texte);
+        input.value = '';
+        return;
+    }
+
+    if (roomRef) {
+        roomRef.child('messages').push({
+            pseudo: monPseudo,
+            texte: texte,
+            timestamp: Date.now()
+        });
+        input.value = '';
+    }
+}
+
+function ecouterChatFirebase() {
+    if (!roomRef) return;
+
+    roomRef.child('messages').on('child_added', (snapshot) => {
+        let msg = snapshot.val();
+        if (msg) {
+            afficherNouveauMessageChat(msg.pseudo, msg.texte);
+        }
+    });
+}
+
+function afficherNouveauMessageChat(pseudo, texte) {
+    const container = document.getElementById('chat-messages');
+    if (!container) return;
+
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.innerHTML = `<span class="sender">${pseudo} :</span> ${texte}`;
+    container.appendChild(div);
+
+    container.scrollTop = container.scrollHeight; // Auto-scroll vers le bas
 }
