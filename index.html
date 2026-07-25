@@ -22,25 +22,31 @@
         </div>
 
         <div class="menu-box">
-            <h3>Choisir un mode de jeu</h3>
-            <div class="menu-box">
-                <h3>👤 Mode Solo</h3>
-                <label for="nb-bots-select"><b>Nombre de bots :</b></label><br>
-                <select id="nb-bots-select">
-                    <option value="1">1 Bot</option>
-                    <option value="2">2 Bots</option>
-                    <option value="3" selected>3 Bots</option>
-                    <option value="4">4 Bots</option>
-                    <option value="5">5 Bots</option>
-                    <option value="6">6 Bots</option>
-                </select><br><br>
-                <button class="btn-menu" onclick="lancerModeSolo()">Jouer en Solo</button>
-            </div>
-            <button class="btn-menu" onclick="afficherMenuMulti()">🌐 Multijoueur (2 à 7 Joueurs)</button>
+            <h3>👤 Mode Solo</h3>
+            <label for="nb-bots-select"><b>Nombre de bots :</b></label><br>
+            <select id="nb-bots-select">
+                <option value="1">1 Bot</option>
+                <option value="2">2 Bots</option>
+                <option value="3" selected>3 Bots</option>
+                <option value="4">4 Bots</option>
+                <option value="5">5 Bots</option>
+                <option value="6">6 Bots</option>
+            </select><br><br>
+            <button class="btn-menu" onclick="lancerModeSolo()">Jouer en Solo</button>
+        </div>
+
+        <div class="menu-box">
+            <h3>🌐 Mode Multijoueur</h3>
+            <button class="btn-menu" onclick="afficherMenuMulti()">Rejoindre / Créer une partie</button>
+        </div>
+
+        <div class="menu-box">
+            <h3>Besoin d'aide ?</h3>
+            <button class="btn-menu" style="background-color: #f1c40f; color: #2c3e50;" onclick="ouvrirModal('modal-regles')">📜 Règles du jeu</button>
         </div>
 
         <div id="multi-panel" style="display: none;" class="menu-box">
-            <h4>Multijoueur=</h4>
+            <h4>Multijoueur (Firebase)</h4>
             <label for="nb-players-select"><b>Nombre de joueurs à la table :</b></label><br>
             <select id="nb-players-select">
                 <option value="2">2 Joueurs</option>
@@ -155,6 +161,40 @@
                 👍 Prêt pour la manche suivante !
             </button>
             <p id="attente-joueurs-msg" style="margin-top: 12px; color: #f1c40f; font-weight: bold;"></p>
+        </div>
+
+        <div id="modal-regles" class="modal-panel">
+            <div class="panel-header">
+                <h2>📜 Règles du Cinq Rois</h2>
+                <button class="btn-close-modal" onclick="fermerModal('modal-regles')">✖</button>
+            </div>
+            <div style="text-align: left; line-height: 1.5; font-size: 14px; padding: 10px; max-height: 70vh; overflow-y: auto;">
+                <p><b>🎯 Objectif :</b> Obtenir le score le plus bas possible à la fin des 11 manches !</p>
+                
+                <h4>👑 Cartes & Atouts</h4>
+                <ul>
+                    <li>Le jeu comporte 5 enseignes (♥ ♦ ♣ ♠ ★) + Jokers.</li>
+                    <li>À chaque manche, le nombre de cartes distribuées augmente (M1 = 3 cartes, M11 = 13 cartes).</li>
+                    <li>L'atout change à chaque manche selon le nombre de cartes (M1 = 3, M2 = 4 ... M9 = V, M10 = D, M11 = R).</li>
+                </ul>
+
+                <h4>🧩 Combinaisons valides</h4>
+                <ul>
+                    <li><b>Famille (Brelan/Carré) :</b> Au moins 3 cartes de même valeur.</li>
+                    <li><b>Suite :</b> Au moins 3 cartes consécutives de la même couleur.</li>
+                    <li><i>Règle spéciale :</i> Durant les 3 premières manches, vous ne pouvez poser qu'<b>une seule</b> combinaison.</li>
+                </ul>
+
+                <h4>🔄 Déroulement d'un tour</h4>
+                <ol>
+                    <li>Piocher une carte (pioche ou défausse).</li>
+                    <li>(Optionnel) Créer ou poser vos combinaisons.</li>
+                    <li>Défausser 1 carte pour terminer le tour.</li>
+                </ol>
+
+                <h4>🏁 Fin de manche</h4>
+                <p>Lorsqu'un joueur pose <b>toute sa main</b>, les autres disposent d'un <b>dernier tour</b> avant le décompte des pénalités.</p>
+            </div>
         </div>
 
     </div>
