@@ -751,17 +751,30 @@ function mettreAJourListeJoueursMultiUI() {
 }
 
 // ==========================================
-// 6. MODE SOLO (CONTRE 3 BOTS)
+// 6. MODE SOLO (CONTRE N BOTS)
 // ==========================================
-let bots = [
-    { id: 1, nom: "Bot 1", main: [], score: 0 },
-    { id: 2, nom: "Bot 2", main: [], score: 0 },
-    { id: 3, nom: "Bot 3", main: [], score: 0 }
-];
-
+let bots = []; 
 let listeJoueursSolo = []; 
 let indexJoueurActuel = 0;
 let indexJoueurQuiAPose = -1;
+
+function lancerModeSolo() {
+    modeJeu = "SOLO";
+    
+    // Récupérer le nombre de bots choisi
+    let selectBots = document.getElementById('nb-bots-select');
+    let nbBots = selectBots ? parseInt(selectBots.value) : 3;
+
+    // Générer dynamiquement le tableau de bots
+    bots = [];
+    for (let i = 1; i <= nbBots; i++) {
+        bots.push({ id: i, nom: `Bot ${i}`, main: [], score: 0 });
+    }
+
+    reinitialiserVariablePartie();
+    demarrerJeuUI();
+    initialiserPartieSolo();
+}
 
 function initialiserPartieSolo() {
     if (mancheActuelle === 1) {
@@ -774,6 +787,7 @@ function initialiserPartieSolo() {
     maMain = [];
     for (let i = 0; i < nbCartes; i++) maMain.push(pioche.pop());
 
+    // Distribuer les cartes à chaque bot
     bots.forEach(bot => {
         bot.main = [];
         for (let i = 0; i < nbCartes; i++) bot.main.push(pioche.pop());
@@ -782,18 +796,15 @@ function initialiserPartieSolo() {
     defausse = [pioche.pop()];
     aPoseMaMain = false;
     estDernierTour = false;
-
-    // Réinitialisation explicite du tapis de pose pour le Solo
     groupesAposer = [];
     cartesSelectionnees = [];
     aPioche = false;
 
-    listeJoueursSolo = [
-        { type: 'HUMAIN', nom: monPseudo },
-        { type: 'BOT', botData: bots[0] },
-        { type: 'BOT', botData: bots[1] },
-        { type: 'BOT', botData: bots[2] }
-    ];
+    // Construire la liste des participants (Humain + Bots)
+    listeJoueursSolo = [{ type: 'HUMAIN', nom: monPseudo }];
+    bots.forEach(bot => {
+        listeJoueursSolo.push({ type: 'BOT', botData: bot });
+    });
 
     indexJoueurActuel = 0; 
     monTour = true;
@@ -801,7 +812,7 @@ function initialiserPartieSolo() {
     preparerTableauScoresUI();
     afficherMain();
     afficherDefausse();
-    afficherGroupesAPoser(); // Nettoie le conteneur HTML
+    afficherGroupesAPoser();
     mettreAJourListeJoueursUI();
     mettreAJourStatutTour();
 
@@ -816,96 +827,21 @@ function initialiserPartieSolo() {
     }
 }
 
-function jouerTourBot(bot) {
-    document.getElementById('status-message').innerText = `🤖 ${bot.nom} réfléchit...`;
-
-    setTimeout(() => {
-        if (pioche.length === 0) {
-            if (defausse.length > 1) {
-                let derniere = defausse.pop();
-                pioche = melanger(defausse);
-                defausse = [derniere];
-            }
-        }
-        if (pioche.length > 0) {
-            let cartePiochee = pioche.pop();
-            bot.main.push(cartePiochee);
-        }
-
-        bot.main.sort((a, b) => {
-            let ptsA = estUnJokerOuAtout(a) ? 0 : obtenirValeurNumerique(a.valeur);
-            let ptsB = estUnJokerOuAtout(b) ? 0 : obtenirValeurNumerique(b.valeur);
-            return ptsB - ptsA;
-        });
-
-        let carteDefaussee = bot.main.shift();
-        defausse.push(carteDefaussee);
-        afficherDefausse();
-
-        if (!estDernierTour && bot.main.length <= 3 && Math.random() < 0.5) {
-            estDernierTour = true;
-            indexJoueurQuiAPose = indexJoueurActuel;
-        }
-
-        passerTourSuivantSolo();
-    }, 1000);
-}
-
-function passerTourSuivantSolo() {
-    indexJoueurActuel = (indexJoueurActuel + 1) % listeJoueursSolo.length;
-    let joueurActuel = listeJoueursSolo[indexJoueurActuel];
-
-    mettreAJourListeJoueursUI();
-
-    if (estDernierTour && indexJoueurActuel === indexJoueurQuiAPose) {
-        finirMancheSolo();
-        return;
-    }
-
-    if (joueurActuel.type === 'HUMAIN') {
-        monTour = true;
-        aPioche = false;
-        mettreAJourStatutTour();
-    } else {
-        monTour = false;
-        jouerTourBot(joueurActuel.botData);
-    }
-}
-
-function mettreAJourListeJoueursUI() {
-    const container = document.getElementById('players-list');
-    if (!container) return;
-    container.innerHTML = '';
-
-    listeJoueursSolo.forEach((j, idx) => {
-        const div = document.createElement('div');
-        div.className = 'player-card';
-        if (idx === indexJoueurActuel) div.classList.add('active-turn');
-        let nomAffiche = j.type === 'HUMAIN' ? j.nom : j.botData.nom;
-        div.innerHTML = `<b>${nomAffiche}</b>`;
-        container.appendChild(div);
-    });
-}
-
 function finirMancheSolo() {
     let penHumain = (indexJoueurQuiAPose === 0) ? 0 : calculerPointsMain(maMain);
     scoreJoueur += penHumain;
 
-    let penBot1 = (indexJoueurQuiAPose === 1) ? 0 : calculerPointsMain(bots[0].main);
-    let penBot2 = (indexJoueurQuiAPose === 2) ? 0 : calculerPointsMain(bots[1].main);
-    let penBot3 = (indexJoueurQuiAPose === 3) ? 0 : calculerPointsMain(bots[2].main);
-
-    bots[0].score += penBot1;
-    bots[1].score += penBot2;
-    bots[2].score += penBot3;
-
-    ajouterLigneScoreSolo(mancheActuelle, penHumain, penBot1, penBot2, penBot3);
-
     let recapHTML = `<h3>🏁 Fin de la Manche ${mancheActuelle} !</h3><b>Récapitulatif des pénalités :</b><br><br>`;
     recapHTML += `• <b>${monPseudo}</b> : +${penHumain} pts (Total: ${scoreJoueur} pts)<br>`;
-    recapHTML += `• <b>${bots[0].nom}</b> : +${penBot1} pts (Total: ${bots[0].score} pts)<br>`;
-    recapHTML += `• <b>${bots[1].nom}</b> : +${penBot2} pts (Total: ${bots[1].score} pts)<br>`;
-    recapHTML += `• <b>${bots[2].nom}</b> : +${penBot3} pts (Total: ${bots[2].score} pts)<br>`;
+
+    // Calculer et accumuler les pénalités pour chaque bot
+    bots.forEach((bot, idx) => {
+        let penBot = (indexJoueurQuiAPose === (idx + 1)) ? 0 : calculerPointsMain(bot.main);
+        bot.score += penBot;
+        recapHTML += `• <b>${bot.nom}</b> : +${penBot} pts (Total: ${bot.score} pts)<br>`;
+    });
+
+    ajouterLigneScoreSolo(mancheActuelle, penHumain);
 
     document.getElementById('recap-fin-manche-content').innerHTML = recapHTML;
     document.getElementById('attente-joueurs-msg').innerText = "Appuyez sur le bouton pour continuer.";
@@ -918,29 +854,29 @@ function finirMancheSolo() {
     ouvrirModal('modal-fin-manche');
 }
 
-function ajouterLigneScoreSolo(manche, penHumain, penBot1, penBot2, penBot3) {
+function ajouterLigneScoreSolo(manche, penHumain) {
     const tbody = document.getElementById('lignes-scores');
     if (!tbody) return;
 
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td>M${manche} (${manche + 2}c)</td>
-        <td>${penHumain} pts</td>
-        <td>${penBot1} pts</td>
-        <td>${penBot2} pts</td>
-        <td>${penBot3} pts</td>
-    `;
+    let cols = `<td>M${manche} (${manche + 2}c)</td><td>${penHumain} pts</td>`;
+    
+    bots.forEach(bot => {
+        let penBot = (indexJoueurQuiAPose === bot.id) ? 0 : calculerPointsMain(bot.main);
+        cols += `<td>${penBot} pts</td>`;
+    });
+
+    tr.innerHTML = cols;
     tbody.appendChild(tr);
 
+    // Mettre à jour le footer des totaux
     const totJ = document.getElementById('total-joueur');
-    const totB1 = document.getElementById('total-bot-1');
-    const totB2 = document.getElementById('total-bot-2');
-    const totB3 = document.getElementById('total-bot-3');
-
     if (totJ) totJ.innerText = `${scoreJoueur} pts`;
-    if (totB1) totB1.innerText = `${bots[0].score} pts`;
-    if (totB2) totB2.innerText = `${bots[1].score} pts`;
-    if (totB3) totB3.innerText = `${bots[2].score} pts`;
+
+    bots.forEach(bot => {
+        const totBot = document.getElementById(`total-bot-${bot.id}`);
+        if (totBot) totBot.innerText = `${bot.score} pts`;
+    });
 }
 
 // ==========================================
