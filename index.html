@@ -23,7 +23,19 @@
 
         <div class="menu-box">
             <h3>Choisir un mode de jeu</h3>
-            <button class="btn-menu" onclick="lancerModeSolo()">👤 Jouer en Solo (contre 3 Bots)</button>
+            <div class="menu-box">
+                <h3>👤 Mode Solo</h3>
+                <label for="nb-bots-select"><b>Nombre de bots :</b></label><br>
+                <select id="nb-bots-select">
+                    <option value="1">1 Bot</option>
+                    <option value="2">2 Bots</option>
+                    <option value="3" selected>3 Bots</option>
+                    <option value="4">4 Bots</option>
+                    <option value="5">5 Bots</option>
+                    <option value="6">6 Bots</option>
+                </select><br><br>
+                <button class="btn-menu" onclick="lancerModeSolo()">Jouer en Solo</button>
+            </div>
             <button class="btn-menu" onclick="afficherMenuMulti()">🌐 Multijoueur (2 à 7 Joueurs)</button>
         </div>
 
